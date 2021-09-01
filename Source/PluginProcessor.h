@@ -87,6 +87,8 @@ private:
     // Entire Mono Chain for getting LowCut, Peak Gain, HighCut EQs.
     using MonoChain = juce::dsp::ProcessorChain <CutFilter, Filter, CutFilter>;
 
+    using CoefficientPtr = Filter::CoefficientsPtr;
+
     // To accomodate for stereo we need both left and right chains
     MonoChain leftChain;
     MonoChain rightChain;
@@ -99,6 +101,11 @@ private:
         HighCut
     };
     
+    void updatePeakFilter (const ChainSettings& settings);
+    static void updateCoefficients (CoefficientPtr& old, CoefficientPtr& replacement);
+
+    template<typename FilterChainType, typename CoefficientType>
+    void updateCutFilter (FilterChainType& lowCut, const CoefficientType& cutCoefficients, const Slope slope);
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (VstpluginAudioProcessor)
 };
