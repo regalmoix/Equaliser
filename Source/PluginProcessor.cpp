@@ -115,16 +115,23 @@ void VstpluginAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBl
      *    6     36db/oct
      *    8     48db/oct
      */
-    int   order             = 2 * settings.lowCutSlope + 2;
-    auto  cutCoefficients   = juce::dsp::FilterDesign<float>::designIIRHighpassHighOrderButterworthMethod(settings.lowCutFreq, getSampleRate(), order);
-    
-    auto& rightLowCut       = rightChain.get<ChainPostitions::LowCut>();
-    auto& leftLowCut        = leftChain.get<ChainPostitions::LowCut>();
+    int   lowCutOrder           = 2 * settings.lowCutSlope + 2;
+    int   highCutOrder          = 2 * settings.highCutSlope + 2;
 
-    updateCutFilter (rightLowCut, cutCoefficients, settings.lowCutSlope);
-    updateCutFilter (leftLowCut , cutCoefficients, settings.lowCutSlope);
+    auto  lowCutCoefficients    = juce::dsp::FilterDesign<float>::designIIRHighpassHighOrderButterworthMethod(settings.lowCutFreq , getSampleRate(), lowCutOrder);
+    auto  highCutCoefficients   = juce::dsp::FilterDesign<float>::designIIRLowpassHighOrderButterworthMethod (settings.highCutFreq, getSampleRate(), highCutOrder);
+
+    auto& rightLowCut           = rightChain.get<ChainPostitions::LowCut> ();
+    auto& leftLowCut            = leftChain .get<ChainPostitions::LowCut> ();
+    auto& rightHighCut          = rightChain.get<ChainPostitions::HighCut>();
+    auto& leftHighCut           = leftChain .get<ChainPostitions::HighCut>();
+
+
+    updateCutFilter (rightLowCut, lowCutCoefficients, settings.lowCutSlope);
+    updateCutFilter (leftLowCut , lowCutCoefficients, settings.lowCutSlope);
     updatePeakFilter(settings);
-
+    updateCutFilter (rightHighCut, highCutCoefficients, settings.highCutSlope);
+    updateCutFilter (leftHighCut , highCutCoefficients, settings.highCutSlope);
 }
 
 void VstpluginAudioProcessor::releaseResources()
@@ -191,15 +198,23 @@ void VstpluginAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuff
      *    8     48db/oct
      */
 
-    int   order             = 2 * settings.lowCutSlope + 2;
-    auto  cutCoefficients   = juce::dsp::FilterDesign<float>::designIIRHighpassHighOrderButterworthMethod(settings.lowCutFreq, getSampleRate(), order);
-    
-    auto& rightLowCut       = rightChain.get<ChainPostitions::LowCut>();
-    auto& leftLowCut        = leftChain .get<ChainPostitions::LowCut>();
+    int   lowCutOrder           = 2 * settings.lowCutSlope + 2;
+    int   highCutOrder          = 2 * settings.highCutSlope + 2;
 
-    updateCutFilter (rightLowCut, cutCoefficients, settings.lowCutSlope);
-    updateCutFilter (leftLowCut , cutCoefficients, settings.lowCutSlope);
+    auto  lowCutCoefficients    = juce::dsp::FilterDesign<float>::designIIRHighpassHighOrderButterworthMethod(settings.lowCutFreq,  getSampleRate(), lowCutOrder);
+    auto  highCutCoefficients   = juce::dsp::FilterDesign<float>::designIIRLowpassHighOrderButterworthMethod (settings.highCutFreq, getSampleRate(), highCutOrder);
+
+    auto& rightLowCut       = rightChain.get<ChainPostitions::LowCut> ();
+    auto& leftLowCut        = leftChain .get<ChainPostitions::LowCut> ();
+    auto& rightHighCut      = rightChain.get<ChainPostitions::HighCut>();
+    auto& leftHighCut       = leftChain .get<ChainPostitions::HighCut>();
+
+
+    updateCutFilter (rightLowCut, lowCutCoefficients, settings.lowCutSlope);
+    updateCutFilter (leftLowCut , lowCutCoefficients, settings.lowCutSlope);
     updatePeakFilter(settings);
+    updateCutFilter (rightHighCut, highCutCoefficients, settings.highCutSlope);
+    updateCutFilter (leftHighCut , highCutCoefficients, settings.highCutSlope);
 
     leftChain .process(leftContext);
     rightChain.process(rightContext);
@@ -350,6 +365,7 @@ void VstpluginAudioProcessor::updateCutFilter(FilterChainType& lowCut, const Coe
     lowCut.template setBypassed<2>(true);
     lowCut.template setBypassed<3>(true);
 
+    // Do not add break since each case intentionally wants all below cases to be run
     switch (slope)
     {
         case Slope::Slope48:
