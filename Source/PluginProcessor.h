@@ -100,12 +100,19 @@ private:
         Peak,
         HighCut
     };
-    
-    void updatePeakFilter (const ChainSettings& settings);
+
+    void updateFilters      ();
+    void updateLowCutFilter (const ChainSettings& settings);
+    void updateHighCutFilter(const ChainSettings& settings);
+    void updatePeakFilter   (const ChainSettings& settings);
+
     static void updateCoefficients (CoefficientPtr& old, CoefficientPtr& replacement);
 
     template<typename FilterChainType, typename CoefficientType>
     void updateCutFilter (FilterChainType& lowCut, const CoefficientType& cutCoefficients, const Slope slope);
+
+    
+
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (VstpluginAudioProcessor)
 };
