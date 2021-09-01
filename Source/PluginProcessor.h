@@ -12,9 +12,28 @@
 
 #include <JuceHeader.h>
 
-//==============================================================================
-/**
-*/
+enum Slope
+{
+    Slope12, 
+    Slope24, 
+    Slope36, 
+    Slope48
+};
+
+struct ChainSettings
+{
+    float peakFreq      { 0.0f };
+    float peakGain      { 0.0f };
+    float peakQ         { 0.0f };
+    
+    float lowCutFreq    { 0.0f };
+    float highCutFreq   { 0.0f };
+
+    Slope lowCutSlope     { Slope::Slope12 };
+    Slope highCutSlope    { Slope::Slope12 };
+};
+
+ChainSettings getChainSettings (const juce::AudioProcessorValueTreeState& apvts);
 class VstpluginAudioProcessor  : public AudioProcessor
 {
 public:
@@ -71,6 +90,14 @@ private:
     // To accomodate for stereo we need both left and right chains
     MonoChain leftChain;
     MonoChain rightChain;
+
+    // Enum for easy access to Chain Elements of a Mono Chain
+    enum ChainPostitions
+    {
+        LowCut,
+        Peak,
+        HighCut
+    };
     
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (VstpluginAudioProcessor)
