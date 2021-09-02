@@ -16,6 +16,18 @@
 //==============================================================================
 /**
 */
+class RotarySlider : public juce::Slider
+{
+public:
+    // Delegating superclass constructor to initialise the super class members according to the below parameters
+    // If we did not do this, juce::Slider would have been default constructed
+    RotarySlider() 
+        : juce::Slider (juce::Slider::SliderStyle::RotaryHorizontalVerticalDrag, juce::Slider::TextEntryBoxPosition::NoTextBox)
+    {
+        
+    }
+};
+
 class VstpluginAudioProcessorEditor  : public AudioProcessorEditor
 {
 public:
@@ -30,6 +42,18 @@ private:
     // This reference is provided as a quick way for your editor to
     // access the processor object that created it.
     VstpluginAudioProcessor& processor;
+
+    RotarySlider peakFrequencySlider;
+    RotarySlider peakGainSlider;
+    RotarySlider peakQualitySlider;
+
+    RotarySlider lowCutFrequencySlider;
+    RotarySlider highCutFrequencySlider;
+
+    RotarySlider lowCutSlopeSlider;
+    RotarySlider highCutSlopeSlider;
+
+    std::vector<juce::Component*> getComponents();
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (VstpluginAudioProcessorEditor)
 };

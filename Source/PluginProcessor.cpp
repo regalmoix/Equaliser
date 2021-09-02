@@ -180,7 +180,7 @@ bool VstpluginAudioProcessor::hasEditor() const
 
 AudioProcessorEditor* VstpluginAudioProcessor::createEditor()
 {
-    return new GenericAudioProcessorEditor (*this);
+    return new VstpluginAudioProcessorEditor (*this);
 }
 
 //==============================================================================
