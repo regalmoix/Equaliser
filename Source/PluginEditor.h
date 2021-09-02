@@ -65,6 +65,8 @@ private:
     APVTS::SliderAttachment lowCutSlopeSliderAttachment;
     APVTS::SliderAttachment highCutSlopeSliderAttachment;
 
+    MonoChain monoChain;
+    
     std::vector<juce::Component*> getComponents();
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (VstpluginAudioProcessorEditor)

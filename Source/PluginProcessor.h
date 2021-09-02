@@ -20,6 +20,21 @@ enum Slope
     Slope48
 };
 
+// Enum for easy access to Chain Elements of a Mono Chain
+enum ChainPostitions
+{
+    LowCut,
+    Peak,
+    HighCut
+};
+
+using Filter    = juce::dsp::IIR::Filter<float>;
+using CutFilter = juce::dsp::ProcessorChain <Filter, Filter, Filter, Filter>;
+
+using MonoChain = juce::dsp::ProcessorChain <CutFilter, Filter, CutFilter>;
+using CoefficientPtr = Filter::CoefficientsPtr;
+
+
 struct ChainSettings
 {
     float peakFreq      { 0.0f };
@@ -80,26 +95,10 @@ public:
     juce::AudioProcessorValueTreeState apvts { *this, nullptr, "Parameters", createParameterLayout() };
 
 private:
-    using Filter  = juce::dsp::IIR::Filter<float>;
-
-    using CutFilter = juce::dsp::ProcessorChain <Filter, Filter, Filter, Filter>;
-
-    // Entire Mono Chain for getting LowCut, Peak Gain, HighCut EQs.
-    using MonoChain = juce::dsp::ProcessorChain <CutFilter, Filter, CutFilter>;
-
-    using CoefficientPtr = Filter::CoefficientsPtr;
-
     // To accomodate for stereo we need both left and right chains
     MonoChain leftChain;
     MonoChain rightChain;
 
-    // Enum for easy access to Chain Elements of a Mono Chain
-    enum ChainPostitions
-    {
-        LowCut,
-        Peak,
-        HighCut
-    };
 
     void updateFilters      ();
     void updateLowCutFilter (const ChainSettings& settings);

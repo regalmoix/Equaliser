@@ -41,12 +41,76 @@ VstpluginAudioProcessorEditor::~VstpluginAudioProcessorEditor()
 //==============================================================================
 void VstpluginAudioProcessorEditor::paint (Graphics& g)
 {
-    // (Our component is opaque, so we must completely fill the background with a solid colour)
-    g.fillAll (getLookAndFeel().findColour (ResizableWindow::backgroundColourId));
+    using namespace juce;
 
-    g.setColour (Colours::white);
-    g.setFont (15.0f);
-    g.drawFittedText ("Hello World!", getLocalBounds(), Justification::centred, 1);
+    // (Our component is opaque, so we must completely fill the background with a solid colour)
+    g.fillAll (Colours::black);
+    auto bounds     = getLocalBounds();
+    auto frequencyResponseArea = bounds.removeFromTop(bounds.getHeight() * 0.33);
+    auto width      = frequencyResponseArea.getWidth();
+
+    CutFilter& lowCut   = monoChain.get<ChainPostitions::LowCut>();
+    Filter& peak        = monoChain.get<ChainPostitions::Peak>();
+    CutFilter& highCut  = monoChain.get<ChainPostitions::HighCut>();
+
+    auto sampleRate = processor.getSampleRate();
+
+    // For each pixel in 0 to width - 1 index, we want the magnitude (the height of the graph) in dB
+    std::vector<double> magnitudesDecibel(width);
+
+    for (int i = 0; i < width; ++i)
+    {
+        // Initialise to 1 gain (ie no change of volume)
+        double magnitude = 1.0f;
+        // On log scale, get frequency corresponding to pixel #i given 20Hz is i = 0 and 20KHz is i = width - 1
+        double frequency = mapToLog10((double) i / (double) width, 20.0, 20000.0);
+
+        if (!monoChain.isBypassed<ChainPostitions::Peak>())
+            magnitude *= peak.coefficients->getMagnitudeForFrequency(frequency, sampleRate);
+
+        if (!lowCut.isBypassed<0>())
+            magnitude *= lowCut.get<0>().coefficients->getMagnitudeForFrequency(frequency, sampleRate);
+        if (!lowCut.isBypassed<1>())
+            magnitude *= lowCut.get<1>().coefficients->getMagnitudeForFrequency(frequency, sampleRate);
+        if (!lowCut.isBypassed<2>())
+            magnitude *= lowCut.get<2>().coefficients->getMagnitudeForFrequency(frequency, sampleRate);
+        if (!lowCut.isBypassed<3>())
+            magnitude *= lowCut.get<3>().coefficients->getMagnitudeForFrequency(frequency, sampleRate);
+
+        if (!highCut.isBypassed<0>())
+            magnitude *= highCut.get<0>().coefficients->getMagnitudeForFrequency(frequency, sampleRate);
+        if (!highCut.isBypassed<1>())
+            magnitude *= highCut.get<1>().coefficients->getMagnitudeForFrequency(frequency, sampleRate);
+        if (!highCut.isBypassed<2>())
+            magnitude *= highCut.get<2>().coefficients->getMagnitudeForFrequency(frequency, sampleRate);
+        if (!highCut.isBypassed<3>())
+            magnitude *= highCut.get<3>().coefficients->getMagnitudeForFrequency(frequency, sampleRate);
+
+        magnitudesDecibel[i] = magnitude;
+    }
+
+    Path responseCurve;
+    const double minY = frequencyResponseArea.getBottom();
+    const double maxY = frequencyResponseArea.getY();
+
+    auto  mapMagnitudeToPixel = [minY, maxY] (double input)
+    {
+        return jmap(input, -24.0, +24.0, minY, maxY);
+    };
+
+    responseCurve.startNewSubPath(frequencyResponseArea.getX(), mapMagnitudeToPixel(magnitudesDecibel.front()));
+
+    for (size_t x = 1; x < magnitudesDecibel.size(); ++x)
+    {
+        responseCurve.lineTo(frequencyResponseArea.getX() + x, mapMagnitudeToPixel(magnitudesDecibel[x]));
+    }
+
+    g.setColour(Colours::orange);
+
+    g.drawRoundedRectangle(frequencyResponseArea.toFloat(), 4.0f, 1.0f);
+
+    g.setColour(Colours::white);
+    g.strokePath(responseCurve, PathStrokeType(2.0f));
 }
 
 void VstpluginAudioProcessorEditor::resized()
