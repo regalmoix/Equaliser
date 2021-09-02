@@ -53,6 +53,18 @@ private:
     RotarySlider lowCutSlopeSlider;
     RotarySlider highCutSlopeSlider;
 
+    using APVTS = juce::AudioProcessorValueTreeState;
+
+    APVTS::SliderAttachment peakFrequencySliderAttachment;
+    APVTS::SliderAttachment peakGainSliderAttachment;
+    APVTS::SliderAttachment peakQualitySliderAttachment;
+
+    APVTS::SliderAttachment lowCutFrequencySliderAttachment;
+    APVTS::SliderAttachment highCutFrequencySliderAttachment;
+
+    APVTS::SliderAttachment lowCutSlopeSliderAttachment;
+    APVTS::SliderAttachment highCutSlopeSliderAttachment;
+
     std::vector<juce::Component*> getComponents();
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (VstpluginAudioProcessorEditor)

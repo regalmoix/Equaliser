@@ -13,7 +13,17 @@
 
 //==============================================================================
 VstpluginAudioProcessorEditor::VstpluginAudioProcessorEditor (VstpluginAudioProcessor& p)
-    : AudioProcessorEditor (&p), processor (p)
+    : AudioProcessorEditor (&p), processor (p),
+      peakFrequencySliderAttachment (processor.apvts, "Peak Freq", peakFrequencySlider),
+      peakGainSliderAttachment      (processor.apvts, "Peak Gain", peakGainSlider),
+      peakQualitySliderAttachment   (processor.apvts, "Peak Q",    peakQualitySlider),
+
+
+      lowCutFrequencySliderAttachment (processor.apvts, "LowCut Freq",  lowCutFrequencySlider),
+      highCutFrequencySliderAttachment(processor.apvts, "HighCut Freq", highCutFrequencySlider),
+
+      lowCutSlopeSliderAttachment     (processor.apvts, "LowCut Slope",  lowCutSlopeSlider),
+      highCutSlopeSliderAttachment    (processor.apvts, "HighCut Slope", highCutSlopeSlider)
 {
     // Make sure that before the constructor has finished, you've set the
     // editor's size to whatever you need it to be.
