@@ -65,9 +65,9 @@
           uiLastY_Normal="415" uiopen_Normal="1">
     <PLUGIN name="VSTPlugin" format="VST3" category="Fx" manufacturer="nacagraw"
             version="1.0.0" file="/home/regalmoix/VSTPlugin/Builds/Plugin/VSTPlugin.vst3"
-            uniqueId="5a3e5e6" isInstrument="0" fileTime="17b92b7c028" infoUpdateTime="17b92c657bf"
+            uniqueId="5a3e5e6" isInstrument="0" fileTime="17b92b7c028" infoUpdateTime="17ba5903420"
             numInputs="2" numOutputs="2" isShell="0" uid="acfdd085"/>
-    <STATE>191.VMjLgXK....O+fWarAhckI2bo8la8HRLt.iHfTlai8FYo41Y8HRUTYTK3HxO9.BOVMEUy.Ea0cVZtMEcgQWY9vSRC8Vav8lak4Fc9XCLt3hKt3hKt3hKt3hYRUUSTEETIckVwTjQisVTTgkdEYjKAQjYPQSPWgUdMcjKAQjct3hdA4hKt3hKt3hKtnTUv.UQAslXuk0UXoWUFE0YQcEV77RRC8Vav8lak4Fc9vyKVMEUy.Ea0cVZtMEcgQWY9..</STATE>
+    <STATE>615.VMjLg3k....O+fWarAhckI2bo8la8HRLt.iHfTlai8FYo41Y8HRUTYTK3HxO9.BOVMEUy.Ea0cVZtMEcgQWY9vSRC8Vav8lak4Fc9LyM23BTEwlXmAiUYoWUrIVdA4hKAIlKTETRUAUSAAkKBolQY4BQlMTQlQkVscVLPASTGgjQIcUV2EjYic1cVM1ZAAkKIAkKt3hKt3hKngCdtDjKTETRUAUSAAkKBolQY4BQ1MTQlQkVscVLPASTGgzT2ESX1UkQtDSQFEFLUYjKAolKA4hKt3hKt3hKt3hKt.UQpQUPvPjKAgDTZoVPP4RST4xT0MlLPASTGgjQIcUV2EjYic1cVM1ZAAkKIAkKt3hKt3hKlwTZtDjKTETRUAUSAAkKBolQY4BQlMTQ1oWXxzDUioWP3Qkb3XjXqEjYic1cVM1ZAAkKIAkKt3hKt3hKt3hKt3hKTETRUAUSAAkKBolQY4BQ1ITQtTUVmMmQHYTRWk0cAY1XmcmUisVPP4RRP4hKt3hKt3hK5klKA4BUAkTUP0TPP4hPpYTVtPjcBUjKUk0YyYDRGUjUZQWPlM1Y2Y0XqEDTtjDTt3hKt3hKt3hKt3hKtPUPIUETMEDTtHjZFkkKD4hPE4RUYc1bFgTTAY1XmcmUisVPP4RRP4hKt3hKt3hKtbyJt3hKt3hKt3hKt3hKtQUUCUEQTg2ZrM1YQcUVDUjQicVPP4RPHQEY1UTLhkWPP4RPL4hKi4hKt3hKt3hKtXlTU0DUQAURWoULEYzXqEEUXoWQFwyKIMzasA2atUlaz4COuX0TTMCTrU2Yo41TzEFck4C.</STATE>
     <LAYOUT>
       <INPUTS>
         <BUS index="0" layout="L R"/>
@@ -94,7 +94,7 @@
           uiLastY_Normal="168" uiopen_Normal="1">
     <PLUGIN name="Audio File Player Plugin" format="VST3" category="Fx|Tools"
             manufacturer="Spyced Concepts" version="1.0.0" file="/home/regalmoix/Downloads/AudioFilePlayerPlugin/Builds/LinuxMakefile/build/AudioFilePlayerPlugin.vst3"
-            uniqueId="f0ace424" isInstrument="0" fileTime="17b9289ab48" infoUpdateTime="17b92c657c0"
+            uniqueId="f0ace424" isInstrument="0" fileTime="17b9289ab48" infoUpdateTime="17ba5903420"
             numInputs="2" numOutputs="2" isShell="0" uid="acf46683"/>
     <STATE>191.VMjLgXK....O+fWarAhckI2bo8la8HRLt.iHfTlai8FYo41Y8HRUTYTK3HxO9.BOVMEUy.Ea0cVZtMEcgQWY9vSRC8Vav8lak4Fc9XCLt3hKt3hKt3hKt3hYRUUSTEETIckVwTjQisVTTgkdEYjKAQjYPQSPWgUdMcjKAQjct3hdA4hKt3hKt3hKtnTUv.UQAslXuk0UXoWUFE0YQcEV77RRC8Vav8lak4Fc9vyKVMEUy.Ea0cVZtMEcgQWY9..</STATE>
     <LAYOUT>

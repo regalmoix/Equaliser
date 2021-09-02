@@ -189,12 +189,20 @@ void VstpluginAudioProcessor::getStateInformation (MemoryBlock& destData)
     // You should use this method to store your parameters in the memory block.
     // You could do that either as raw data, or use the XML or ValueTree classes
     // as intermediaries to make it easy to save and load complex data.
+    juce::MemoryOutputStream memoryOutputStream(destData, true);
+    apvts.state.writeToStream(memoryOutputStream);
 }
 
 void VstpluginAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
 {
     // You should use this method to restore your parameters from this memory block,
     // whose contents will have been created by the getStateInformation() call.
+    juce::ValueTree tree = juce::ValueTree::readFromData(data, sizeInBytes);
+    if (tree.isValid())
+    {
+        apvts.replaceState(tree);
+        updateFilters();
+    }
 }
 
 juce::AudioProcessorValueTreeState::ParameterLayout VstpluginAudioProcessor::createParameterLayout()
@@ -291,18 +299,6 @@ ChainSettings getChainSettings (const juce::AudioProcessorValueTreeState& apvts)
     return settings;
 }
 
-void VstpluginAudioProcessor::updatePeakFilter (const ChainSettings& settings)
-{
-    auto peakCoeff          = juce::dsp::IIR::Coefficients<float>::makePeakFilter(getSampleRate(), settings.peakFreq, settings.peakQ, 
-                                                                                  juce::Decibels::decibelsToGain(settings.peakGain));
-    
-    // Get the reference to the processing peak filter of Left chain
-    // TODO: Possible to do different processing for both channels 
-    updateCoefficients(leftChain .get<ChainPostitions::Peak>().coefficients, peakCoeff);
-    updateCoefficients(rightChain.get<ChainPostitions::Peak>().coefficients, peakCoeff);
-
-}
-
 void VstpluginAudioProcessor::updateCoefficients(CoefficientPtr& old, CoefficientPtr& replacement) 
 {
     *old = *replacement;
@@ -350,6 +346,18 @@ void VstpluginAudioProcessor::updateCutFilter(FilterChainType& lowCut, const Coe
         }
 
     }
+}
+
+void VstpluginAudioProcessor::updatePeakFilter (const ChainSettings& settings)
+{
+    auto peakCoeff          = juce::dsp::IIR::Coefficients<float>::makePeakFilter(getSampleRate(), settings.peakFreq, settings.peakQ, 
+                                                                                  juce::Decibels::decibelsToGain(settings.peakGain));
+    
+    // Get the reference to the processing peak filter of Left chain
+    // TODO: Possible to do different processing for both channels 
+    updateCoefficients(leftChain .get<ChainPostitions::Peak>().coefficients, peakCoeff);
+    updateCoefficients(rightChain.get<ChainPostitions::Peak>().coefficients, peakCoeff);
+
 }
 
 void VstpluginAudioProcessor::updateLowCutFilter(const ChainSettings& settings)
