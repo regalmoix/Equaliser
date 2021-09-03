@@ -205,6 +205,8 @@ void VstpluginAudioProcessor::setStateInformation (const void* data, int sizeInB
     }
 }
 
+//==============================================================================
+
 juce::AudioProcessorValueTreeState::ParameterLayout VstpluginAudioProcessor::createParameterLayout()
 {
     juce::AudioProcessorValueTreeState::ParameterLayout layout;
@@ -299,10 +301,22 @@ ChainSettings getChainSettings (const juce::AudioProcessorValueTreeState& apvts)
     return settings;
 }
 
-void VstpluginAudioProcessor::updateCoefficients(CoefficientPtr& old, CoefficientPtr& replacement) 
+void updateCoefficients(CoefficientPtr& old, const CoefficientPtr& replacement) 
 {
     *old = *replacement;
 }
+
+CoefficientPtr makePeakFilter(const ChainSettings& settings, const double sampleRate)
+{
+
+    return juce::dsp::IIR::Coefficients<float>::makePeakFilter (sampleRate, 
+                                                                settings.peakFreq, 
+                                                                settings.peakQ, 
+                                                                juce::Decibels::decibelsToGain(settings.peakGain));
+}
+
+//==============================================================================
+
 
 template<typename FilterChainType, typename CoefficientType>
 void VstpluginAudioProcessor::updateCutFilter(FilterChainType& lowCut, const CoefficientType& cutCoefficients, const Slope slope)
@@ -318,25 +332,25 @@ void VstpluginAudioProcessor::updateCutFilter(FilterChainType& lowCut, const Coe
     {
         case Slope::Slope48:
         {
-            *lowCut.template get<3>().coefficients = *cutCoefficients[3];
+            updateCoefficients(lowCut.template get<3>().coefficients, cutCoefficients[3]);
             lowCut.template setBypassed<3>(false);
         }
 
         case Slope::Slope36:
         {
-            *lowCut.template get<2>().coefficients = *cutCoefficients[2];
+            updateCoefficients(lowCut.template get<2>().coefficients, cutCoefficients[2]);
             lowCut.template setBypassed<2>(false);
         }
 
         case Slope::Slope24:
         {
-            *lowCut.template get<1>().coefficients = *cutCoefficients[1];
+            updateCoefficients(lowCut.template get<1>().coefficients, cutCoefficients[1]);
             lowCut.template setBypassed<1>(false);
         }
 
         case Slope::Slope12:
         {
-            *lowCut.template get<0>().coefficients = *cutCoefficients[0];
+            updateCoefficients(lowCut.template get<0>().coefficients, cutCoefficients[0]);
             lowCut.template setBypassed<0>(false);
         }
 
@@ -344,15 +358,12 @@ void VstpluginAudioProcessor::updateCutFilter(FilterChainType& lowCut, const Coe
         {
             break;
         }
-
     }
 }
 
 void VstpluginAudioProcessor::updatePeakFilter (const ChainSettings& settings)
 {
-    auto peakCoeff          = juce::dsp::IIR::Coefficients<float>::makePeakFilter(getSampleRate(), settings.peakFreq, settings.peakQ, 
-                                                                                  juce::Decibels::decibelsToGain(settings.peakGain));
-    
+    CoefficientPtr peakCoeff = makePeakFilter(settings, getSampleRate());
     // Get the reference to the processing peak filter of Left chain
     // TODO: Possible to do different processing for both channels 
     updateCoefficients(leftChain .get<ChainPostitions::Peak>().coefficients, peakCoeff);

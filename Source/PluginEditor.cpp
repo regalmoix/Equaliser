@@ -31,11 +31,27 @@ VstpluginAudioProcessorEditor::VstpluginAudioProcessorEditor (VstpluginAudioProc
     {
         addAndMakeVisible(component);
     }
+
+    // Register as a listener
+    auto& parameters = processor.getParameters();
+    for (auto& param : parameters)
+    {
+        param->addListener(this);
+    }
+
+    startTimerHz(60);
     setSize (600, 400);
 }
 
 VstpluginAudioProcessorEditor::~VstpluginAudioProcessorEditor()
 {
+    // De register as the listener
+    auto& parameters = processor.getParameters();
+    for (auto& param : parameters)
+    {
+        param->removeListener(this);
+    }
+    stopTimer();
 }
 
 //==============================================================================
@@ -86,7 +102,7 @@ void VstpluginAudioProcessorEditor::paint (Graphics& g)
         if (!highCut.isBypassed<3>())
             magnitude *= highCut.get<3>().coefficients->getMagnitudeForFrequency(frequency, sampleRate);
 
-        magnitudesDecibel[i] = magnitude;
+        magnitudesDecibel[i] = Decibels::gainToDecibels(magnitude);;
     }
 
     Path responseCurve;
@@ -95,7 +111,8 @@ void VstpluginAudioProcessorEditor::paint (Graphics& g)
 
     auto  mapMagnitudeToPixel = [minY, maxY] (double input)
     {
-        return jmap(input, -24.0, +24.0, minY, maxY);
+        double pxval = jmap(input, -24.0, +24.0, minY, maxY);
+        return pxval;
     };
 
     responseCurve.startNewSubPath(frequencyResponseArea.getX(), mapMagnitudeToPixel(magnitudesDecibel.front()));
@@ -150,6 +167,25 @@ void VstpluginAudioProcessorEditor::resized()
     lowCutSlopeSlider     .setBounds(lowCutSlopeSliderArea);
     highCutSlopeSlider    .setBounds(highCutSlopeSliderArea);
 
+}
+
+void VstpluginAudioProcessorEditor::parameterValueChanged(int parameterIndex, float newValue)
+{
+    paramsChanged.set(true);
+}
+
+void VstpluginAudioProcessorEditor::timerCallback()
+{
+    if (paramsChanged.compareAndSetBool(false, true))
+    {
+        // Update mono chain of editor
+        ChainSettings  chainSettings    = getChainSettings(processor.apvts);
+        CoefficientPtr peakCoefficients = makePeakFilter(chainSettings, processor.getSampleRate());
+        updateCoefficients(monoChain.get<ChainPostitions::Peak>().coefficients, peakCoefficients); 
+
+        // Do a repaint
+        repaint();
+    }
 }
 
 std::vector<juce::Component*> VstpluginAudioProcessorEditor::getComponents()

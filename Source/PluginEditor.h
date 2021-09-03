@@ -28,7 +28,9 @@ public:
     }
 };
 
-class VstpluginAudioProcessorEditor  : public AudioProcessorEditor
+class VstpluginAudioProcessorEditor  :  public AudioProcessorEditor, 
+                                        public juce::AudioProcessorParameter::Listener, 
+                                        public juce::Timer
 {
 public:
     VstpluginAudioProcessorEditor (VstpluginAudioProcessor&);
@@ -38,10 +40,17 @@ public:
     void paint (Graphics&) override;
     void resized() override;
 
+    void parameterValueChanged   (int parameterIndex, float newValue) override;
+    void parameterGestureChanged (int parameterIndex, bool gestureIsStarting) override { /* No Op */ }
+
+    void timerCallback() override;
+
 private:
     // This reference is provided as a quick way for your editor to
     // access the processor object that created it.
     VstpluginAudioProcessor& processor;
+
+    juce::Atomic<bool> paramsChanged { false };
 
     RotarySlider peakFrequencySlider;
     RotarySlider peakGainSlider;
@@ -66,7 +75,7 @@ private:
     APVTS::SliderAttachment highCutSlopeSliderAttachment;
 
     MonoChain monoChain;
-    
+
     std::vector<juce::Component*> getComponents();
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (VstpluginAudioProcessorEditor)

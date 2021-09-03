@@ -12,6 +12,7 @@
 
 #include <JuceHeader.h>
 
+/**  ENUMS **/
 enum Slope
 {
     Slope12, 
@@ -28,12 +29,13 @@ enum ChainPostitions
     HighCut
 };
 
+
+/**  TYPE ALIASES **/
 using Filter    = juce::dsp::IIR::Filter<float>;
 using CutFilter = juce::dsp::ProcessorChain <Filter, Filter, Filter, Filter>;
 
 using MonoChain = juce::dsp::ProcessorChain <CutFilter, Filter, CutFilter>;
 using CoefficientPtr = Filter::CoefficientsPtr;
-
 
 struct ChainSettings
 {
@@ -49,6 +51,11 @@ struct ChainSettings
 };
 
 ChainSettings getChainSettings (const juce::AudioProcessorValueTreeState& apvts);
+
+void updateCoefficients(CoefficientPtr& old, const CoefficientPtr& replacement);
+
+CoefficientPtr makePeakFilter(const ChainSettings& settings, const double sampleRate);
+
 class VstpluginAudioProcessor  : public AudioProcessor
 {
 public:
@@ -104,8 +111,6 @@ private:
     void updateLowCutFilter (const ChainSettings& settings);
     void updateHighCutFilter(const ChainSettings& settings);
     void updatePeakFilter   (const ChainSettings& settings);
-
-    static void updateCoefficients (CoefficientPtr& old, CoefficientPtr& replacement);
 
     template<typename FilterChainType, typename CoefficientType>
     void updateCutFilter (FilterChainType& lowCut, const CoefficientType& cutCoefficients, const Slope slope);
