@@ -11,6 +11,110 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 
+void LookNFeel::drawRotarySlider(   
+                                juce::Graphics& g,
+                                int x, int y, int width, int height,
+                                float sliderPosProportional,
+                                float rotaryStartAngle,
+                                float rotaryEndAngle,
+                                juce::Slider& slider
+                                )
+{
+    using namespace juce;
+
+    auto bounds = Rectangle<float>(x, y, width, height);
+    g.setColour(Colour(97u, 18u, 167u));
+    g.fillEllipse(bounds);
+    g.setColour(Colour(255u, 154u, 1u));    
+    g.drawEllipse(bounds, 1.0f);
+
+
+    // If slider is castable to RotarySliderWithLabels
+    if (auto* rswl = dynamic_cast<RotarySliderWithLabels*>(&slider)) 
+    {
+        auto boundCenter = bounds.getCentre();
+
+        Path p;
+        Rectangle<float> rect;
+
+        // 4 pixel thick clock hand, centered vertically with bottom being just above the center and top touching the circle
+        rect.setLeft    (boundCenter.getX() - 2);
+        rect.setRight   (boundCenter.getX() + 2);
+        rect.setTop     (bounds.getY());
+        rect.setBottom  (boundCenter.getY() - rswl->getTextHeight() * 1.5);
+
+        // Draw and rotate the slider's clock hand.
+        p.addRoundedRectangle(rect, 3.0f);
+        auto sliderAng  = jmap(sliderPosProportional, 0.0f, 1.0f, rotaryStartAngle, rotaryEndAngle);
+        p.applyTransform(AffineTransform().rotated(sliderAng, boundCenter.getX(), boundCenter.getY()));
+        g.fillPath(p);
+
+        g.setFont(rswl->getTextHeight());
+        auto stringWidth = g.getCurrentFont().getStringWidth(rswl->getDisplayString());
+        rect.setSize(stringWidth + 5, rswl->getTextHeight() + 3);
+
+        // Center this rectangle to be at center of the bounds
+        rect.setCentre(boundCenter);
+
+        // White Text on Black Backgrounf
+        g.setColour(Colours::black);
+        g.fillRect(rect);
+        g.setColour(Colours::white);
+        g.drawFittedText(rswl->getDisplayString(), rect.toNearestInt(), juce::Justification::centred, 1);
+    }     
+}
+
+juce::String RotarySliderWithLabels::getDisplayString() const
+{
+    return juce::String(getValue());
+}
+
+void RotarySliderWithLabels::paint(juce::Graphics& g)
+{
+    using namespace juce;
+
+    float startAngle= degreesToRadians(180.0f + 60.0f);
+    float endAngle  = degreesToRadians(180.0f - 60.0f) + MathConstants<float>::twoPi;
+
+    auto  range         = getRange();
+    auto  sliderBounds  = getSliderBounds();
+
+    g.setColour(Colours::yellowgreen);
+    g.drawRect(sliderBounds);
+
+    g.setColour(Colours::red);
+    g.drawRect(getLocalBounds());
+
+    getLookAndFeel().drawRotarySlider ( g, 
+                                        sliderBounds.getX(), sliderBounds.getY(), 
+                                        sliderBounds.getWidth(), sliderBounds.getHeight(), 
+                                        jmap(getValue(), range.getStart(), range.getEnd(), 0.0, 1.0),
+                                        startAngle,
+                                        endAngle,
+                                        *this
+                                    );
+
+}
+
+juce::Rectangle<int> RotarySliderWithLabels::getSliderBounds() const
+{
+    auto bounds =  getLocalBounds();
+
+    auto size = juce::jmin(bounds.getWidth(), bounds.getHeight());
+
+    size -= getTextHeight() * 2;
+
+    juce::Rectangle<int> square;
+    square.setSize(size, size);
+    square.setCentre(bounds.getCentreX(), 0);
+    square.setY(2);
+
+    return square;
+}   
+
+
+//==============================================================================
+
 ResponseCurveComponent::ResponseCurveComponent(VstpluginAudioProcessor& p) 
     : processor(p)
 {

@@ -24,7 +24,7 @@ public:
                             float rotaryStartAngle,
                             float rotaryEndAngle,
                             juce::Slider&
-                        ) override { };
+                        ) override;
 };
 
 class RotarySliderWithLabels : public juce::Slider
@@ -45,7 +45,7 @@ public:
         setLookAndFeel(nullptr);
     }
 
-    void paint(Graphics& g) override { };
+    void paint(Graphics& g) override;
     juce::Rectangle<int> getSliderBounds() const;
     int getTextHeight() const { return 14;}
     juce::String getDisplayString() const;
