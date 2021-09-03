@@ -28,9 +28,32 @@ public:
     }
 };
 
-class VstpluginAudioProcessorEditor  :  public AudioProcessorEditor, 
-                                        public juce::AudioProcessorParameter::Listener, 
-                                        public juce::Timer
+class ResponseCurveComponent :  public juce::AudioProcessorParameter::Listener, 
+                                public juce::Timer,
+                                public juce::Component
+{
+public:
+    ResponseCurveComponent(VstpluginAudioProcessor&);
+    ~ResponseCurveComponent();
+
+    void parameterValueChanged   (int parameterIndex, float newValue) override;
+    void parameterGestureChanged (int parameterIndex, bool gestureIsStarting) override { /* No Op */ }
+
+    void timerCallback() override;
+
+    void paint (Graphics&) override;
+
+
+private:
+    // This reference is provided as a quick way for your editor to
+    // access the processor object that created it.
+    VstpluginAudioProcessor& processor;
+    juce::Atomic<bool> paramsChanged { false };
+    MonoChain monoChain;
+
+};
+
+class VstpluginAudioProcessorEditor  :  public AudioProcessorEditor
 {
 public:
     VstpluginAudioProcessorEditor (VstpluginAudioProcessor&);
@@ -40,17 +63,10 @@ public:
     void paint (Graphics&) override;
     void resized() override;
 
-    void parameterValueChanged   (int parameterIndex, float newValue) override;
-    void parameterGestureChanged (int parameterIndex, bool gestureIsStarting) override { /* No Op */ }
-
-    void timerCallback() override;
-
 private:
     // This reference is provided as a quick way for your editor to
     // access the processor object that created it.
     VstpluginAudioProcessor& processor;
-
-    juce::Atomic<bool> paramsChanged { false };
 
     RotarySlider peakFrequencySlider;
     RotarySlider peakGainSlider;
@@ -61,6 +77,9 @@ private:
 
     RotarySlider lowCutSlopeSlider;
     RotarySlider highCutSlopeSlider;
+
+    ResponseCurveComponent  responseCurveComponent;
+
 
     using APVTS = juce::AudioProcessorValueTreeState;
 
@@ -74,7 +93,6 @@ private:
     APVTS::SliderAttachment lowCutSlopeSliderAttachment;
     APVTS::SliderAttachment highCutSlopeSliderAttachment;
 
-    MonoChain monoChain;
 
     std::vector<juce::Component*> getComponents();
 
