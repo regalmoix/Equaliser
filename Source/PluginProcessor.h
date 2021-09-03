@@ -36,6 +36,7 @@ using CutFilter = juce::dsp::ProcessorChain <Filter, Filter, Filter, Filter>;
 
 using MonoChain = juce::dsp::ProcessorChain <CutFilter, Filter, CutFilter>;
 using CoefficientPtr = Filter::CoefficientsPtr;
+using CoefficientArr = juce::ReferenceCountedArray<juce::dsp::IIR::Coefficients<float>>;
 
 struct ChainSettings
 {
@@ -52,9 +53,15 @@ struct ChainSettings
 
 ChainSettings getChainSettings (const juce::AudioProcessorValueTreeState& apvts);
 
-void updateCoefficients(CoefficientPtr& old, const CoefficientPtr& replacement);
+void updateCoefficients (CoefficientPtr& old, const CoefficientPtr& replacement);
 
-CoefficientPtr makePeakFilter(const ChainSettings& settings, const double sampleRate);
+CoefficientPtr makePeakFilter   (const ChainSettings& settings, const double sampleRate);
+CoefficientArr makeLowCutFilter (const ChainSettings& settings, const double sampleRate);
+CoefficientArr makeHighCutFilter(const ChainSettings& settings, const double sampleRate);
+
+template<typename FilterChainType, typename CoefficientType>
+void updateCutFilter (FilterChainType& lowCut, const CoefficientType& cutCoefficients, const Slope slope);
+  
 
 class VstpluginAudioProcessor  : public AudioProcessor
 {
@@ -112,10 +119,7 @@ private:
     void updateHighCutFilter(const ChainSettings& settings);
     void updatePeakFilter   (const ChainSettings& settings);
 
-    template<typename FilterChainType, typename CoefficientType>
-    void updateCutFilter (FilterChainType& lowCut, const CoefficientType& cutCoefficients, const Slope slope);
-
-    
+  
 
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (VstpluginAudioProcessor)

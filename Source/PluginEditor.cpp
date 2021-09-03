@@ -39,6 +39,10 @@ VstpluginAudioProcessorEditor::VstpluginAudioProcessorEditor (VstpluginAudioProc
         param->addListener(this);
     }
 
+    // Initial call to display response curve when plugin started
+    paramsChanged.compareAndSetBool(true, false);
+    timerCallback();
+
     startTimerHz(60);
     setSize (600, 400);
 }
@@ -78,8 +82,8 @@ void VstpluginAudioProcessorEditor::paint (Graphics& g)
     {
         // Initialise to 1 gain (ie no change of volume)
         double magnitude = 1.0f;
-        // On log scale, get frequency corresponding to pixel #i given 20Hz is i = 0 and 20KHz is i = width - 1
-        double frequency = mapToLog10((double) i / (double) width, 20.0, 20000.0);
+        // On log scale, get frequency corresponding to pixel #i given 15Hz is i = 0 and 22KHz is i = width - 1
+        double frequency = mapToLog10((double) i / (double) width, 15.0, 22000.0);
 
         if (!monoChain.isBypassed<ChainPostitions::Peak>())
             magnitude *= peak.coefficients->getMagnitudeForFrequency(frequency, sampleRate);
@@ -111,7 +115,8 @@ void VstpluginAudioProcessorEditor::paint (Graphics& g)
 
     auto  mapMagnitudeToPixel = [minY, maxY] (double input)
     {
-        double pxval = jmap(input, -24.0, +24.0, minY, maxY);
+        // 4dB headroom => 24 + 4 = 28dB
+        double pxval = jmap(input, -28.0, +28.0, minY, maxY);
         return pxval;
     };
 
@@ -179,9 +184,16 @@ void VstpluginAudioProcessorEditor::timerCallback()
     if (paramsChanged.compareAndSetBool(false, true))
     {
         // Update mono chain of editor
-        ChainSettings  chainSettings    = getChainSettings(processor.apvts);
-        CoefficientPtr peakCoefficients = makePeakFilter(chainSettings, processor.getSampleRate());
-        updateCoefficients(monoChain.get<ChainPostitions::Peak>().coefficients, peakCoefficients); 
+        const double sampleRate         = processor.getSampleRate();
+
+        ChainSettings  chainSettings        = getChainSettings(processor.apvts);
+        CoefficientPtr peakCoefficients     = makePeakFilter(chainSettings, sampleRate);
+        CoefficientArr lowCutCoefficients   = makeLowCutFilter(chainSettings, sampleRate);
+        CoefficientArr highCutCoefficients  = makeHighCutFilter(chainSettings, sampleRate);
+
+        updateCoefficients  (monoChain.get<ChainPostitions::Peak>().coefficients, peakCoefficients); 
+        updateCutFilter     (monoChain.get<ChainPostitions::LowCut>(),  lowCutCoefficients,  chainSettings.lowCutSlope);
+        updateCutFilter     (monoChain.get<ChainPostitions::HighCut>(), highCutCoefficients, chainSettings.highCutSlope);
 
         // Do a repaint
         repaint();
