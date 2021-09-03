@@ -148,6 +148,15 @@ void ResponseCurveComponent::timerCallback()
 VstpluginAudioProcessorEditor::VstpluginAudioProcessorEditor (VstpluginAudioProcessor& p)
     : AudioProcessorEditor (&p), 
       processor (p),
+
+      peakFrequencySlider(*processor.apvts.getParameter("Peak Freq"), "Hz"),
+      peakGainSlider(*processor.apvts.getParameter("Peak Gain"), "dB"),
+      peakQualitySlider(*processor.apvts.getParameter("Peak Q"), ""),
+      lowCutFrequencySlider(*processor.apvts.getParameter("LowCut Freq"), "Hz"),
+      highCutFrequencySlider(*processor.apvts.getParameter("HighCut Freq"), "Hz"),
+      lowCutSlopeSlider(*processor.apvts.getParameter("LowCut Slope"), "dB/Oct"),
+      highCutSlopeSlider(*processor.apvts.getParameter("HighCut Slope"), "dB/Oct"),
+
       responseCurveComponent          (processor),
       peakFrequencySliderAttachment (processor.apvts, "Peak Freq", peakFrequencySlider),
       peakGainSliderAttachment      (processor.apvts, "Peak Gain", peakGainSlider),

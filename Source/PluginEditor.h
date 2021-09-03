@@ -14,18 +14,46 @@
 #include "PluginProcessor.h"
 
 //==============================================================================
-/**
-*/
-class RotarySlider : public juce::Slider
+
+class LookNFeel : public juce::LookAndFeel_V4
+{
+public:
+    void drawRotarySlider(  juce::Graphics&,
+                            int x, int y, int width, int height,
+                            float sliderPosProportional,
+                            float rotaryStartAngle,
+                            float rotaryEndAngle,
+                            juce::Slider&
+                        ) override { };
+};
+
+class RotarySliderWithLabels : public juce::Slider
 {
 public:
     // Delegating superclass constructor to initialise the super class members according to the below parameters
     // If we did not do this, juce::Slider would have been default constructed
-    RotarySlider() 
-        : juce::Slider (juce::Slider::SliderStyle::RotaryHorizontalVerticalDrag, juce::Slider::TextEntryBoxPosition::NoTextBox)
+    RotarySliderWithLabels(juce::RangedAudioParameter& param, const juce::String& unitSuffix) 
+        : juce::Slider  (juce::Slider::SliderStyle::RotaryHorizontalVerticalDrag, juce::Slider::TextEntryBoxPosition::NoTextBox),
+          parameter     (&param),
+          unit          (unitSuffix)
     {
-        
+        setLookAndFeel(&lnf);
     }
+
+    ~RotarySliderWithLabels()
+    {
+        setLookAndFeel(nullptr);
+    }
+
+    void paint(Graphics& g) override { };
+    juce::Rectangle<int> getSliderBounds() const;
+    int getTextHeight() const { return 14;}
+    juce::String getDisplayString() const;
+
+private:
+    LookNFeel lnf;
+    juce::RangedAudioParameter* parameter;
+    juce::String                unit;
 };
 
 class ResponseCurveComponent :  public juce::AudioProcessorParameter::Listener, 
@@ -68,15 +96,15 @@ private:
     // access the processor object that created it.
     VstpluginAudioProcessor& processor;
 
-    RotarySlider peakFrequencySlider;
-    RotarySlider peakGainSlider;
-    RotarySlider peakQualitySlider;
+    RotarySliderWithLabels peakFrequencySlider;
+    RotarySliderWithLabels peakGainSlider;
+    RotarySliderWithLabels peakQualitySlider;
 
-    RotarySlider lowCutFrequencySlider;
-    RotarySlider highCutFrequencySlider;
+    RotarySliderWithLabels lowCutFrequencySlider;
+    RotarySliderWithLabels highCutFrequencySlider;
 
-    RotarySlider lowCutSlopeSlider;
-    RotarySlider highCutSlopeSlider;
+    RotarySliderWithLabels lowCutSlopeSlider;
+    RotarySliderWithLabels highCutSlopeSlider;
 
     ResponseCurveComponent  responseCurveComponent;
 

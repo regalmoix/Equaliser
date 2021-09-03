@@ -317,16 +317,27 @@ CoefficientPtr makePeakFilter(const ChainSettings& settings, const double sample
 
 CoefficientArr makeLowCutFilter(const ChainSettings& settings, const double sampleRate)
 {
+    /** Order   Slope
+     *    2     12db/oct
+     *    4     24db/oct
+     *    6     36db/oct
+     *    8     48db/oct
+     */
     const int lowCutOrder = 2 * settings.lowCutSlope + 2; 
     return juce::dsp::FilterDesign<float>::designIIRHighpassHighOrderButterworthMethod(settings.lowCutFreq, sampleRate, lowCutOrder);
 }
 
 CoefficientArr makeHighCutFilter(const ChainSettings& settings, const double sampleRate)
 {
+    /** Order   Slope
+     *    2     12db/oct
+     *    4     24db/oct
+     *    6     36db/oct
+     *    8     48db/oct
+     */
     const int highCutOrder = 2 * settings.highCutSlope + 2;
     return juce::dsp::FilterDesign<float>::designIIRLowpassHighOrderButterworthMethod (settings.highCutFreq, sampleRate, highCutOrder);
 }
-
 
 template<typename FilterChainType, typename CoefficientType>
 void updateCutFilter(FilterChainType& lowCut, const CoefficientType& cutCoefficients, const Slope slope)
@@ -384,13 +395,6 @@ void VstpluginAudioProcessor::updatePeakFilter (const ChainSettings& settings)
 
 void VstpluginAudioProcessor::updateLowCutFilter(const ChainSettings& settings)
 {   
-    /** Order   Slope
-     *    2     12db/oct
-     *    4     24db/oct
-     *    6     36db/oct
-     *    8     48db/oct
-     */
-    int   lowCutOrder           = 2 * settings.lowCutSlope + 2;
     auto  lowCutCoefficients    = makeLowCutFilter(settings, getSampleRate());
 
     auto& rightLowCut           = rightChain.get<ChainPostitions::LowCut> ();
@@ -402,12 +406,6 @@ void VstpluginAudioProcessor::updateLowCutFilter(const ChainSettings& settings)
 
 void VstpluginAudioProcessor::updateHighCutFilter(const ChainSettings& settings)
 {
-    /** Order   Slope
-     *    2     12db/oct
-     *    4     24db/oct
-     *    6     36db/oct
-     *    8     48db/oct
-     */
     auto  highCutCoefficients   = makeHighCutFilter(settings, getSampleRate());
 
     auto& rightHighCut          = rightChain.get<ChainPostitions::HighCut>();
