@@ -211,12 +211,14 @@ juce::AudioProcessorValueTreeState::ParameterLayout VstpluginAudioProcessor::cre
 {
     juce::AudioProcessorValueTreeState::ParameterLayout layout;
 
+    float freqSkewFactor = 0.4;
+
     // Adding LowCut Frequency Slider with appropriate range and defaults
     layout.add(std::make_unique<juce::AudioParameterFloat>
         (
             "LowCut Freq",
             "LowCut Freq",
-            juce::NormalisableRange(20.0f, 20000.0f, 1.0f, 0.3f),
+            juce::NormalisableRange(20.0f, 20000.0f, 1.0f, freqSkewFactor),
             20.0f
         )
     );
@@ -226,7 +228,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout VstpluginAudioProcessor::cre
         (
             "HighCut Freq",
             "HighCut Freq",
-            juce::NormalisableRange(20.0f, 20000.0f, 1.0f, 0.35f),
+            juce::NormalisableRange(20.0f, 20000.0f, 1.0f, freqSkewFactor),
             20000.0f
         )
     );
@@ -236,7 +238,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout VstpluginAudioProcessor::cre
         (
             "Peak Freq",
             "Peak Freq",
-            juce::NormalisableRange(20.0f, 20000.0f, 1.0f, 0.3f),
+            juce::NormalisableRange(20.0f, 20000.0f, 1.0f, freqSkewFactor),
             1000.0f
         )
     );

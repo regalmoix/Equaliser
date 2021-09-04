@@ -66,7 +66,29 @@ void LookNFeel::drawRotarySlider(
 
 juce::String RotarySliderWithLabels::getDisplayString() const
 {
-    return juce::String(getValue());
+    juce::String labelText;
+
+    // For checking if parameter is a choice type for slope 
+    if (auto* choiceTypeParam = dynamic_cast<AudioParameterChoice*>(parameter))
+        labelText = choiceTypeParam->getCurrentChoiceName();
+    
+    // For checking if parameter is a float type like gain or freq or quality 
+    else if (auto* floatTypeParam = dynamic_cast<AudioParameterFloat*>(parameter))
+    {
+        // Only frequency param can exceed 1000 so direcly can use KHz as Unit
+        if (getValue() >= 1000.0)
+            labelText = juce::String(getValue() / 1000, 2) + " KHz";
+
+        // General Case, append Unit to Value [adding space if unit is not empty string]
+        else
+            labelText = juce::String(getValue(), 0) + ((unit != "") ? " " : "") + unit;
+        
+    }
+    // Should not reach here.
+    else
+        jassertfalse;
+
+    return labelText;
 }
 
 void RotarySliderWithLabels::paint(juce::Graphics& g)
@@ -107,10 +129,12 @@ juce::Rectangle<int> RotarySliderWithLabels::getSliderBounds() const
     juce::Rectangle<int> square;
     square.setSize(size, size);
     square.setCentre(bounds.getCentreX(), 0);
-    square.setY(2);
+
+    // y = 0 => top of the component
+    square.setY(getTextHeight() / 2);
 
     return square;
-}   
+}
 
 
 //==============================================================================
@@ -126,8 +150,7 @@ ResponseCurveComponent::ResponseCurveComponent(VstpluginAudioProcessor& p)
     }
 
     // Initial call to display response curve when plugin started
-    paramsChanged.compareAndSetBool(true, false);
-    timerCallback();
+    updateFilters();
 
     startTimerHz(60);
 }
@@ -231,20 +254,24 @@ void ResponseCurveComponent::timerCallback()
     if (paramsChanged.compareAndSetBool(false, true))
     {
         // Update mono chain of editor
-        const double sampleRate         = processor.getSampleRate();
-
-        ChainSettings  chainSettings        = getChainSettings(processor.apvts);
-        CoefficientPtr peakCoefficients     = makePeakFilter(chainSettings, sampleRate);
-        CoefficientArr lowCutCoefficients   = makeLowCutFilter(chainSettings, sampleRate);
-        CoefficientArr highCutCoefficients  = makeHighCutFilter(chainSettings, sampleRate);
-
-        updateCoefficients  (monoChain.get<ChainPostitions::Peak>().coefficients, peakCoefficients); 
-        updateCutFilter     (monoChain.get<ChainPostitions::LowCut>(),  lowCutCoefficients,  chainSettings.lowCutSlope);
-        updateCutFilter     (monoChain.get<ChainPostitions::HighCut>(), highCutCoefficients, chainSettings.highCutSlope);
-
+        updateFilters();
         // Do a repaint
         repaint();
     }
+}
+
+void ResponseCurveComponent::updateFilters()
+{
+    const double sampleRate         = processor.getSampleRate();
+
+    ChainSettings  chainSettings        = getChainSettings(processor.apvts);
+    CoefficientPtr peakCoefficients     = makePeakFilter(chainSettings, sampleRate);
+    CoefficientArr lowCutCoefficients   = makeLowCutFilter(chainSettings, sampleRate);
+    CoefficientArr highCutCoefficients  = makeHighCutFilter(chainSettings, sampleRate);
+
+    updateCoefficients  (monoChain.get<ChainPostitions::Peak>().coefficients, peakCoefficients); 
+    updateCutFilter     (monoChain.get<ChainPostitions::LowCut>(),  lowCutCoefficients,  chainSettings.lowCutSlope);
+    updateCutFilter     (monoChain.get<ChainPostitions::HighCut>(), highCutCoefficients, chainSettings.highCutSlope);
 }
 
 //==============================================================================

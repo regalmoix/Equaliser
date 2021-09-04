@@ -79,6 +79,7 @@ private:
     juce::Atomic<bool> paramsChanged { false };
     MonoChain monoChain;
 
+    void updateFilters();
 };
 
 class VstpluginAudioProcessorEditor  :  public AudioProcessorEditor
