@@ -75,9 +75,9 @@ juce::String RotarySliderWithLabels::getDisplayString() const
     // For checking if parameter is a float type like gain or freq or quality 
     else if (auto* floatTypeParam = dynamic_cast<AudioParameterFloat*>(parameter))
     {
-        // Only frequency param can exceed 1000 so direcly can use KHz as Unit
+        // Only frequency param can exceed 1000 so direcly can use kHz as Unit
         if (getValue() >= 1000.0)
-            labelText = juce::String(getValue() / 1000, 2) + " KHz";
+            labelText = juce::String(getValue() / 1000, 2) + " kHz";
 
         // General Case, append Unit to Value [adding space if unit is not empty string]
         else
@@ -101,11 +101,11 @@ void RotarySliderWithLabels::paint(juce::Graphics& g)
     auto  range         = getRange();
     auto  sliderBounds  = getSliderBounds();
 
-    g.setColour(Colours::yellowgreen);
-    g.drawRect(sliderBounds);
-
-    g.setColour(Colours::red);
-    g.drawRect(getLocalBounds());
+    // For Boundary Debugging
+    // g.setColour(Colours::yellowgreen);
+    // g.drawRect(sliderBounds);
+    // g.setColour(Colours::red);
+    // g.drawRect(getLocalBounds());
 
     getLookAndFeel().drawRotarySlider ( g, 
                                         sliderBounds.getX(), sliderBounds.getY(), 
@@ -115,7 +115,36 @@ void RotarySliderWithLabels::paint(juce::Graphics& g)
                                         endAngle,
                                         *this
                                     );
+    Point<float> center = sliderBounds.toFloat().getCentre();
+    float        radius = sliderBounds.getWidth() / 2;
 
+    g.setColour(Colours::hotpink);
+    g.setFont  (getTextHeight());
+
+    for (LabelWithPosition& label : labels)
+    {
+
+        float labelAngularPos   = label.getAngularPosition(startAngle, endAngle);
+        Point labelCenter       = center.getPointOnCircumference(radius + getTextHeight(), labelAngularPos);
+
+        drawLabelAtPosition(g, label, labelCenter);
+    }
+
+}
+
+void RotarySliderWithLabels::drawLabelAtPosition(juce::Graphics& g, const LabelWithPosition& label, const Point<float>& labelCenter)
+{
+    juce::String text       = label.labelText;
+
+    Rectangle<float> labelRect;
+
+    labelRect.setSize  (g.getCurrentFont().getStringWidth(text), getTextHeight());
+    labelRect.setCentre(labelCenter);   
+
+    // Shift down slightly more to accomodate for height of string
+    labelRect.setY(labelRect.getY() + getTextHeight());
+
+    g.drawFittedText(text, labelRect.toNearestInt(), juce::Justification::centred, 1);
 }
 
 juce::Rectangle<int> RotarySliderWithLabels::getSliderBounds() const
@@ -191,7 +220,7 @@ void ResponseCurveComponent::paint (Graphics& g)
     {
         // Initialise to 1 gain (ie no change of volume)
         double magnitude = 1.0f;
-        // On log scale, get frequency corresponding to pixel #i given 15Hz is i = 0 and 22KHz is i = width - 1
+        // On log scale, get frequency corresponding to pixel #i given 15Hz is i = 0 and 22kHz is i = width - 1
         double frequency = mapToLog10((double) i / (double) width, 15.0, 22000.0);
 
         if (!monoChain.isBypassed<ChainPostitions::Peak>())
@@ -277,30 +306,45 @@ void ResponseCurveComponent::updateFilters()
 //==============================================================================
 
 VstpluginAudioProcessorEditor::VstpluginAudioProcessorEditor (VstpluginAudioProcessor& p)
-    : AudioProcessorEditor (&p), 
-      processor (p),
+    :   AudioProcessorEditor (&p), 
+        processor (p),
 
-      peakFrequencySlider(*processor.apvts.getParameter("Peak Freq"), "Hz"),
-      peakGainSlider(*processor.apvts.getParameter("Peak Gain"), "dB"),
-      peakQualitySlider(*processor.apvts.getParameter("Peak Q"), ""),
-      lowCutFrequencySlider(*processor.apvts.getParameter("LowCut Freq"), "Hz"),
-      highCutFrequencySlider(*processor.apvts.getParameter("HighCut Freq"), "Hz"),
-      lowCutSlopeSlider(*processor.apvts.getParameter("LowCut Slope"), "dB/Oct"),
-      highCutSlopeSlider(*processor.apvts.getParameter("HighCut Slope"), "dB/Oct"),
+        peakFrequencySlider(*processor.apvts.getParameter("Peak Freq"), "Hz"),
+        peakGainSlider(*processor.apvts.getParameter("Peak Gain"), "dB"),
+        peakQualitySlider(*processor.apvts.getParameter("Peak Q"), ""),
+        lowCutFrequencySlider(*processor.apvts.getParameter("LowCut Freq"), "Hz"),
+        highCutFrequencySlider(*processor.apvts.getParameter("HighCut Freq"), "Hz"),
+        lowCutSlopeSlider(*processor.apvts.getParameter("LowCut Slope"), "dB/Oct"),
+        highCutSlopeSlider(*processor.apvts.getParameter("HighCut Slope"), "dB/Oct"),
 
-      responseCurveComponent          (processor),
-      peakFrequencySliderAttachment (processor.apvts, "Peak Freq", peakFrequencySlider),
-      peakGainSliderAttachment      (processor.apvts, "Peak Gain", peakGainSlider),
-      peakQualitySliderAttachment   (processor.apvts, "Peak Q",    peakQualitySlider),
+        responseCurveComponent          (processor),
+        peakFrequencySliderAttachment (processor.apvts, "Peak Freq", peakFrequencySlider),
+        peakGainSliderAttachment      (processor.apvts, "Peak Gain", peakGainSlider),
+        peakQualitySliderAttachment   (processor.apvts, "Peak Q",    peakQualitySlider),
 
-      lowCutFrequencySliderAttachment (processor.apvts, "LowCut Freq",  lowCutFrequencySlider),
-      highCutFrequencySliderAttachment(processor.apvts, "HighCut Freq", highCutFrequencySlider),
+        lowCutFrequencySliderAttachment (processor.apvts, "LowCut Freq",  lowCutFrequencySlider),
+        highCutFrequencySliderAttachment(processor.apvts, "HighCut Freq", highCutFrequencySlider),
 
-      lowCutSlopeSliderAttachment     (processor.apvts, "LowCut Slope",  lowCutSlopeSlider),
-      highCutSlopeSliderAttachment    (processor.apvts, "HighCut Slope", highCutSlopeSlider)
+        lowCutSlopeSliderAttachment     (processor.apvts, "LowCut Slope",  lowCutSlopeSlider),
+        highCutSlopeSliderAttachment    (processor.apvts, "HighCut Slope", highCutSlopeSlider)
 {
     // Make sure that before the constructor has finished, you've set the
     // editor's size to whatever you need it to be.
+    peakFrequencySlider.labels.add({"20 Hz", 0.0f});
+    peakFrequencySlider.labels.add({"20 kHz", 1.0f});
+
+    lowCutFrequencySlider.labels.add({"20 Hz", 0.0f});
+    lowCutFrequencySlider.labels.add({"20 kHz", 1.0f});
+
+    highCutFrequencySlider.labels.add({"20 Hz", 0.0f});
+    highCutFrequencySlider.labels.add({"20 kHz", 1.0f});
+
+    peakQualitySlider.labels.add({"0.1", 0.0f});
+    peakQualitySlider.labels.add({"10",  1.0f});
+
+    peakGainSlider.labels.add({"-24 dB", 0.0f});
+    peakGainSlider.labels.add({"24 dB",  1.0f});
+
     for (auto* component : getComponents())
     {
         addAndMakeVisible(component);

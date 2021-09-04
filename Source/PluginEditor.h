@@ -45,10 +45,25 @@ public:
         setLookAndFeel(nullptr);
     }
 
+    struct LabelWithPosition
+    {
+        juce::String            labelText;
+        float                   sliderPos;
+
+        float getAngularPosition(const float startAngle, const float endAngle) const
+        {
+            return jmap (sliderPos, 0.0f, 1.0f, startAngle, endAngle);
+        }
+    };
+
+    juce::Array<LabelWithPosition>  labels;
+
+    void drawLabelAtPosition(juce::Graphics& g, const LabelWithPosition& label, const Point<float>& labelCenter);
     void paint(Graphics& g) override;
     juce::Rectangle<int> getSliderBounds() const;
     int getTextHeight() const { return 14;}
     juce::String getDisplayString() const;
+
 
 private:
     LookNFeel lnf;
