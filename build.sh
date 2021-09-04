@@ -54,8 +54,7 @@ then
     TITLE="Build Options"
     MENU="Choose one of the following options:"
 
-    OPTIONS=(1 "Release"
-            2 "Debug")
+    OPTIONS=(1 "Debug" 2 "Release")
 
     CHOICE=$(dialog --clear \
                     --backtitle "$BACKTITLE" \
@@ -67,10 +66,10 @@ then
                     
     case $CHOICE in
             1)
-                buildmode=Release
+                buildmode=Debug
                 ;;
             2)
-                buildmode=Debug
+                buildmode=Release
                 ;;
     esac
 fi
