@@ -109,6 +109,9 @@ void VstpluginAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBl
     rightChain.prepare(processSpec);
 
     updateFilters();
+
+    leftChannelFifo .prepare(samplesPerBlock);
+    rightChannelFifo.prepare(samplesPerBlock);
 }
 
 void VstpluginAudioProcessor::releaseResources()
@@ -170,6 +173,10 @@ void VstpluginAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuff
 
     leftChain .process(leftContext);
     rightChain.process(rightContext);
+
+    // After current buffer processed we update FIFO with new buffer.
+    leftChannelFifo .update(buffer);
+    rightChannelFifo.update(buffer);
 }
 
 //==============================================================================

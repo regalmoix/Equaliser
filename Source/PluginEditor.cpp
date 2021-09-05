@@ -195,7 +195,8 @@ juce::Rectangle<int> RotarySliderWithLabels::getSliderBounds() const
 //==============================================================================
 
 ResponseCurveComponent::ResponseCurveComponent(VstpluginAudioProcessor& p) 
-    : processor(p)
+    :   processor(p),
+        leftSCSF(&p.leftChannelFifo)
 {
     // Register as a listener
     auto& parameters = processor.getParameters();
@@ -204,6 +205,8 @@ ResponseCurveComponent::ResponseCurveComponent(VstpluginAudioProcessor& p)
         param->addListener(this);
     }
 
+    leftFFTGen.changeOrder(FFTOrder::order4096);
+    monoBuffer.setSize(1, leftFFTGen.getFFTSize());
     // Initial call to display response curve when plugin started
     updateChain();
 
@@ -291,6 +294,9 @@ void ResponseCurveComponent::paint (Graphics& g)
     {
         responseCurve.lineTo(frequencyResponseArea.getX() + x, mapMagnitudeToPixel(magnitudesDecibel[x]));
     }
+
+    g.setColour(Colours::cyan);
+    g.strokePath(leftFFTPath, PathStrokeType(1.0f));
 
     g.setColour(Colours::orange);
     g.drawRoundedRectangle(frequencyResponseArea.toFloat(), 4.0f, 3.0f);
@@ -401,13 +407,66 @@ void ResponseCurveComponent::parameterValueChanged(int parameterIndex, float new
 
 void ResponseCurveComponent::timerCallback()
 {
+    juce::AudioBuffer<float> incomingBuffer;
+
+    while (leftSCSF->getNumCompleteBuffersAvailable() > 0)
+    {
+        // Try to read the buffer into incomingBuffer
+        if (leftSCSF->getAudioBuffer(incomingBuffer))
+        {
+            int size        = incomingBuffer.getNumSamples();
+            int channelNum  = 0;                                // We have only one channel hence index 0
+
+            // Shift left the samples by "size" and put new buffer at the end [newest buffer rightmost]
+            // ex : monoBuffer [1 2 3 4 5 6 7] and new data [11 12 13] => size = 3
+            // Then after below op, mono buffer [4 5 6 7 5 6 7]
+            juce::FloatVectorOperations::copy(
+                    monoBuffer.getWritePointer(channelNum, 0),
+                    monoBuffer.getReadPointer(channelNum, size),
+                    monoBuffer.getNumSamples() - size
+            );
+
+            // We now copy in the new buffer at the end
+            // Now after below op, mono buffer [4 5 6 7 11 12 13]
+            juce::FloatVectorOperations::copy(
+                monoBuffer.getWritePointer(channelNum, monoBuffer.getNumSamples() - size),
+                incomingBuffer.getReadPointer(channelNum, 0),
+                size
+            );
+
+            leftFFTGen.produceFFTDataForRendering(monoBuffer, -48.0f);
+        }
+    }
+
+    const auto fftBounds    = getRenderArea().toFloat();
+    const auto fftSize      = leftFFTGen.getFFTSize();
+    const auto binWidth     = processor.getSampleRate() / (double)fftSize;
+
+    while (leftFFTGen.getNumAvailableFFTDataBlocks() > 0)
+    {
+        std::vector<float> fftData;
+        if (leftFFTGen.getFFTData(fftData))
+        {
+            pathProducer.generatePath(fftData, fftBounds, fftSize, binWidth, -48.0f);
+        }
+    }
+
+    // While there are paths that can be pulled, get as many and use most recent
+    while (pathProducer.getNumPathsAvailable())
+    {
+        pathProducer.getPath(leftFFTPath);
+    }
+    
+    
+
     if (paramsChanged.compareAndSetBool(false, true))
     {
         // Update mono chain of editor
         updateChain();
-        // Do a repaint
-        repaint();
     }
+
+    // Do a repaint at each callback for drawing update FFT Path
+    repaint();
 }
 
 void ResponseCurveComponent::updateChain()
