@@ -167,6 +167,85 @@ public:
 
 };
 
+class FFTPathProducer
+{
+private:
+    using BufferType    = juce::AudioBuffer<float>;
+    using SCSF          = SingleChannelSampleFifo<BufferType>;
+
+    SCSF*                                   scsf;
+    juce::AudioBuffer<float>                monoBuffer;
+
+    FFTDataGenerator<std::vector<float>>    fftDataGen;
+    AnalyzerPathGenerator<juce::Path>       pathProducer;
+    juce::Path                              fftPath;
+
+public:
+    FFTPathProducer(SCSF& fifo)
+        :   scsf(&fifo)
+    {
+        fftDataGen.changeOrder(FFTOrder::order4096);
+        monoBuffer.setSize(1, fftDataGen.getFFTSize());
+    }
+
+    void process(const juce::Rectangle<float>& fftBounds, double sampleRate)
+    {
+        juce::AudioBuffer<float> incomingBuffer;
+
+        while (scsf->getNumCompleteBuffersAvailable() > 0)
+        {
+            // Try to read the buffer into incomingBuffer
+            if (scsf->getAudioBuffer(incomingBuffer))
+            {
+                int size        = incomingBuffer.getNumSamples();
+                int channelNum  = 0;                                // We have only one channel hence index 0
+
+                // Shift left the samples by "size" and put new buffer at the end [newest buffer rightmost]
+                // ex : monoBuffer [1 2 3 4 5 6 7] and new data [11 12 13] => size = 3
+                // Then after below op, mono buffer [4 5 6 7 5 6 7]
+                juce::FloatVectorOperations::copy(
+                        monoBuffer.getWritePointer(channelNum, 0),
+                        monoBuffer.getReadPointer(channelNum, size),
+                        monoBuffer.getNumSamples() - size
+                );
+
+                // We now copy in the new buffer at the end
+                // Now after below op, mono buffer [4 5 6 7 11 12 13]
+                juce::FloatVectorOperations::copy(
+                    monoBuffer.getWritePointer(channelNum, monoBuffer.getNumSamples() - size),
+                    incomingBuffer.getReadPointer(channelNum, 0),
+                    size
+                );
+
+                fftDataGen.produceFFTDataForRendering(monoBuffer, -48.0f);
+            }
+        }
+
+        const auto fftSize      = fftDataGen.getFFTSize();
+        const auto binWidth     = sampleRate / (double)fftSize;
+
+        while (fftDataGen.getNumAvailableFFTDataBlocks() > 0)
+        {
+            std::vector<float> fftData;
+            if (fftDataGen.getFFTData(fftData))
+            {
+                pathProducer.generatePath(fftData, fftBounds, fftSize, binWidth, -48.0f);
+            }
+        }
+        // While there are paths that can be pulled, get as many and use most recent
+        while (pathProducer.getNumPathsAvailable())
+        {
+            pathProducer.getPath(fftPath);
+        }
+    }
+
+    juce::Path getPath()
+    {
+        return fftPath;
+    }
+
+};
+
 class LookNFeel : public juce::LookAndFeel_V4
 {
 public:
@@ -246,12 +325,8 @@ private:
     juce::Atomic<bool>          paramsChanged { false };
     MonoChain                   monoChain;
     juce::Image                 backgroundGrid;
-
-    SingleChannelSampleFifo<juce::AudioBuffer<float>>*  leftSCSF;
-    juce::AudioBuffer<float>    monoBuffer;
-    FFTDataGenerator<std::vector<float>>    leftFFTGen;
-    AnalyzerPathGenerator<juce::Path>       pathProducer;
-    juce::Path                              leftFFTPath;
+    FFTPathProducer             leftPath;
+    FFTPathProducer             rightPath;
 
     void updateChain();
     juce::Rectangle<int> getRenderArea();
