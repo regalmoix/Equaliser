@@ -11,6 +11,32 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 
+template <typename Type>
+Type mapToLog (Type base, Type value0To1, Type logRangeMin, Type logRangeMax)
+{
+    jassert (logRangeMin > 0);
+    jassert (logRangeMax > 0);
+
+    auto logMin = std::log10 (logRangeMin) / std::log10 (base);
+    auto logMax = std::log10 (logRangeMax) / std::log10 (base);
+
+    return std::pow ((Type) base, value0To1 * (logMax - logMin) + logMin);
+}
+
+template <typename Type>
+Type mapFromLog (Type base, Type valueInLogRange, Type logRangeMin, Type logRangeMax)
+{
+    jassert (logRangeMin > 0);
+    jassert (logRangeMax > 0);
+
+    auto logMin = std::log10 (logRangeMin) / std::log10 (base);
+    auto logMax = std::log10 (logRangeMax) / std::log10 (base);
+
+    return ((std::log10 (valueInLogRange) / std::log10 (base)) - logMin) / (logMax - logMin);
+}
+
+//==============================================================================
+
 void LookNFeel::drawRotarySlider(   
                                 juce::Graphics& g,
                                 int x, int y, int width, int height,
@@ -179,7 +205,7 @@ ResponseCurveComponent::ResponseCurveComponent(VstpluginAudioProcessor& p)
     }
 
     // Initial call to display response curve when plugin started
-    updateFilters();
+    updateChain();
 
     startTimerHz(60);
 }
@@ -203,9 +229,10 @@ void ResponseCurveComponent::paint (Graphics& g)
 
     // (Our component is opaque, so we must completely fill the background with a solid colour)
     g.fillAll (Colours::black);
+    g.drawImage(backgroundGrid, getRenderArea().toFloat());
 
-    auto frequencyResponseArea = getLocalBounds();
-    auto width      = frequencyResponseArea.getWidth();
+    auto frequencyResponseArea = getRenderArea();
+    auto width          = frequencyResponseArea.getWidth();
 
     CutFilter& lowCut   = monoChain.get<ChainPostitions::LowCut>();
     Filter& peak        = monoChain.get<ChainPostitions::Peak>();
@@ -220,8 +247,8 @@ void ResponseCurveComponent::paint (Graphics& g)
     {
         // Initialise to 1 gain (ie no change of volume)
         double magnitude = 1.0f;
-        // On log scale, get frequency corresponding to pixel #i given 15Hz is i = 0 and 22kHz is i = width - 1
-        double frequency = mapToLog10((double) i / (double) width, 15.0, 22000.0);
+        // On log scale, get frequency corresponding to pixel #i given 13Hz is i = 0 and 22kHz is i = width - 1
+        double frequency = mapToLog<double>(10.0 ,(double) i / (double) width, 15.0, 22000.0);
 
         if (!monoChain.isBypassed<ChainPostitions::Peak>())
             magnitude *= peak.coefficients->getMagnitudeForFrequency(frequency, sampleRate);
@@ -266,11 +293,105 @@ void ResponseCurveComponent::paint (Graphics& g)
     }
 
     g.setColour(Colours::orange);
-
-    g.drawRoundedRectangle(frequencyResponseArea.toFloat(), 4.0f, 1.0f);
+    g.drawRoundedRectangle(frequencyResponseArea.toFloat(), 4.0f, 3.0f);
 
     g.setColour(Colours::white);
     g.strokePath(responseCurve, PathStrokeType(2.0f));
+}
+
+void ResponseCurveComponent::resized()
+{
+    using namespace juce;
+    backgroundGrid = Image(Image::PixelFormat::RGB, getWidth(), getHeight(), true);
+
+    Graphics g(backgroundGrid);
+
+    Array<float> frequencies {
+        20.0f,   50.0f,   100.0f, 
+        200.0f,  500.0f,  1000.0f, 
+        2000.0f, 5000.0f, 10000.0f, 20000.0f
+    };
+
+    Array<float> xValuesOfFreq;
+    Array<float> yValuesOfGain;
+
+    Array<float> gains {
+        -24.0f, -12.0f, -6.0f, 0.0f, 6.0f, 12.0f, 24.0f
+    };
+
+    g.setColour(Colours::lightblue);
+    
+    for (float f : frequencies)
+    {
+        float x = mapFromLog<float>(10.0f, f, 13.0f, 22000.0f) * getWidth();
+        xValuesOfFreq.add(x);
+        g.drawVerticalLine(x, 0.0f, getHeight());
+    }
+
+    for (float gain : gains)
+    {
+        float y = jmap<float>(gain, -28.0f, +28.0f, getHeight(), 0.0f);
+        // Yellow for 0dB, but grey otherwise
+        yValuesOfGain.add(y);
+        g.setColour(gain == 0.0f ? Colours::yellow : Colours::grey);
+        g.drawHorizontalLine(y, 0.0f, getWidth());
+    }
+
+    const int fontHeight = 12;
+
+    g.setFont(fontHeight);
+
+    for (int i = 0; i < frequencies.size(); i++)
+    {
+        float freq  = frequencies[i];
+        float x     = xValuesOfFreq[i];
+
+        juce::String labelText;
+        
+        if (freq >= 1000.0)
+            labelText = juce::String(freq / 1000, 2) + " kHz";
+
+        else
+            labelText = juce::String(freq, 0) + " Hz";
+        
+        Rectangle<int> labelRect;
+        labelRect.setSize(g.getCurrentFont().getStringWidth(labelText), fontHeight);
+        labelRect.setCentre(x, 0);
+        labelRect.setY(2);
+
+        g.setColour(Colours::black);
+        g.fillRect(labelRect);
+
+        g.setColour(Colours::lightpink);
+        g.drawFittedText(labelText, labelRect, juce::Justification::centred, 1);
+    }   
+
+    for (int i = 0; i < gains.size(); i++)
+    {
+        float gain  = gains[i];
+        float y     = yValuesOfGain[i];
+
+        juce::String labelText;
+        
+        labelText = juce::String(gain, 0) + " dB";
+        
+        Rectangle<int> labelRect;
+        labelRect.setSize(g.getCurrentFont().getStringWidth(labelText), fontHeight);
+        labelRect.setCentre(0, y);
+        labelRect.setX(2);
+
+        g.setColour(Colours::black);
+        g.fillRect(labelRect);
+
+        g.setColour(Colours::lightpink);
+        g.drawFittedText(labelText, labelRect, juce::Justification::centred, 1);
+    } 
+}
+
+juce::Rectangle<int> ResponseCurveComponent::getRenderArea()
+{
+    auto bounds = getLocalBounds();
+    return bounds;
 }
 
 void ResponseCurveComponent::parameterValueChanged(int parameterIndex, float newValue)
@@ -283,13 +404,13 @@ void ResponseCurveComponent::timerCallback()
     if (paramsChanged.compareAndSetBool(false, true))
     {
         // Update mono chain of editor
-        updateFilters();
+        updateChain();
         // Do a repaint
         repaint();
     }
 }
 
-void ResponseCurveComponent::updateFilters()
+void ResponseCurveComponent::updateChain()
 {
     const double sampleRate         = processor.getSampleRate();
 
@@ -350,7 +471,7 @@ VstpluginAudioProcessorEditor::VstpluginAudioProcessorEditor (VstpluginAudioProc
         addAndMakeVisible(component);
     }
 
-    setSize (600, 400);
+    setSize (800, 600);
 }
 
 VstpluginAudioProcessorEditor::~VstpluginAudioProcessorEditor()
@@ -374,8 +495,8 @@ void VstpluginAudioProcessorEditor::resized()
 
     auto bounds = getLocalBounds();
 
-    // Reserves space of 33% for the frequency spectrum on top
-    auto frequencyResponseArea  = bounds.removeFromTop(bounds.getHeight() * 0.33);
+    // Reserves space of 40% for the frequency spectrum on top
+    auto frequencyResponseArea  = bounds.removeFromTop(bounds.getHeight() * 0.40);
     // Reserves space of 33% for the low cut controls, 66% remains
     auto lowCutArea             = bounds.removeFromLeft(bounds.getWidth() * 0.33);
     // Reserves space of 33% for the frequency spectrum (0.5 * 66% = 33%)

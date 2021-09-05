@@ -85,16 +85,18 @@ public:
     void timerCallback() override;
 
     void paint (Graphics&) override;
-
+    void resized() override;
 
 private:
     // This reference is provided as a quick way for your editor to
     // access the processor object that created it.
-    VstpluginAudioProcessor& processor;
-    juce::Atomic<bool> paramsChanged { false };
-    MonoChain monoChain;
+    VstpluginAudioProcessor&    processor;
+    juce::Atomic<bool>          paramsChanged { false };
+    MonoChain                   monoChain;
+    juce::Image                 backgroundGrid;
 
-    void updateFilters();
+    void updateChain();
+    juce::Rectangle<int> getRenderArea();
 };
 
 class VstpluginAudioProcessorEditor  :  public AudioProcessorEditor
