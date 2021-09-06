@@ -308,11 +308,47 @@ private:
     juce::String                unit;
 };
 
+class PowerButton : public juce::ToggleButton
+{
+
+};
+
+class AnalyzerButton : public juce::ToggleButton
+{
+private:
+    juce::Path randomPath { };
+
+public:
+    AnalyzerButton()
+    {
+        randomPath.clear();
+    }
+
+    void resized() override
+    {
+        juce::Random  randomVal;
+        Rectangle<int> bounds = getLocalBounds().reduced(4);
+        randomPath.startNewSubPath(bounds.getX(), bounds.getY() + bounds.getHeight() * randomVal.nextFloat());
+        for (int x = bounds.getX() + 2; x < bounds.getRight(); x += 2)
+        {
+            int y = bounds.getY() + bounds.getHeight() * randomVal.nextFloat();
+
+            randomPath.lineTo(x, y);
+        }
+    } 
+
+    juce::Path getPath()
+    {
+        return randomPath;
+    }
+};
+
 class ResponseCurveComponent :  public juce::AudioProcessorParameter::Listener, 
                                 public juce::Timer,
                                 public juce::Component
 {
 public:
+
     ResponseCurveComponent(VstpluginAudioProcessor&);
     ~ResponseCurveComponent();
 
@@ -321,8 +357,12 @@ public:
 
     void timerCallback() override;
 
-    void paint (Graphics&) override;
+    void paint(Graphics&) override;
     void resized() override;
+    void showFFTAnalysis(bool isEnabled)
+    {
+        showFFT = isEnabled;   
+    }
 
 private:
     // This reference is provided as a quick way for your editor to
@@ -333,10 +373,9 @@ private:
     juce::Image                 backgroundGrid;
     FFTPathProducer             leftPath;
     FFTPathProducer             rightPath;
-
+    bool                        showFFT { true };
     void updateChain();
     juce::Rectangle<int> getRenderArea();
-
 };
 
 class VstpluginAudioProcessorEditor  :  public AudioProcessorEditor
@@ -364,7 +403,7 @@ private:
     RotarySliderWithLabels lowCutSlopeSlider;
     RotarySliderWithLabels highCutSlopeSlider;
 
-    ResponseCurveComponent  responseCurveComponent;
+    ResponseCurveComponent responseCurveComponent;
 
 
     using APVTS = juce::AudioProcessorValueTreeState;
@@ -379,10 +418,10 @@ private:
     APVTS::SliderAttachment lowCutSlopeSliderAttachment;
     APVTS::SliderAttachment highCutSlopeSliderAttachment;
 
-    juce::ToggleButton      lowCutBypassToggle;
-    juce::ToggleButton      highCutBypassToggle;
-    juce::ToggleButton      peakBypassToggle;
-    juce::ToggleButton      analyzerToggle;
+    PowerButton             lowCutBypassToggle;
+    PowerButton             highCutBypassToggle;
+    PowerButton             peakBypassToggle;
+    AnalyzerButton          analyzerToggle;
 
     APVTS::ButtonAttachment lowCutBypassToggleAttachment;
     APVTS::ButtonAttachment highCutBypassToggleAttachment;

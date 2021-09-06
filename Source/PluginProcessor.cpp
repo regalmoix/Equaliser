@@ -318,9 +318,9 @@ juce::AudioProcessorValueTreeState::ParameterLayout VstpluginAudioProcessor::cre
 
     layout.add(std::make_unique<AudioParameterBool>
         (
-            "Analyzer Bypass",
-            "Analyzer Bypass",
-            false
+            "Analyzer Enable",
+            "Analyzer Enable",
+            true
         )
     );
 

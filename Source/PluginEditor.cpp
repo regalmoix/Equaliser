@@ -48,10 +48,11 @@ void LookNFeel::drawRotarySlider (
 {
     using namespace juce;
 
-    auto bounds = Rectangle<float>(x, y, width, height);
-    g.setColour(Colour(97u, 18u, 167u));
+    bool isEnabled  = slider.isEnabled();
+    auto bounds     = Rectangle<float>(x, y, width, height);
+    g.setColour(isEnabled ? Colour(97u, 18u, 167u) : Colours::darkgrey);
     g.fillEllipse(bounds);
-    g.setColour(Colour(255u, 154u, 1u));    
+    g.setColour(isEnabled ? Colour(255u, 154u, 1u) : Colours::grey);    
     g.drawEllipse(bounds, 1.0f);
 
 
@@ -100,29 +101,44 @@ void LookNFeel::drawToggleButton (
     using namespace juce;
 
     auto bounds = button.getLocalBounds();
-    Path powerButton;
 
-    auto size   = jmin(bounds.getHeight(), bounds.getWidth()) - 4;
-    auto rect   = bounds.withSizeKeepingCentre(size, size).toFloat();
-    float angle = degreesToRadians(30.0f);
+    if (auto* pbtn = dynamic_cast<PowerButton*>(&button))  
+    {
+        Path powerButton;
 
-    powerButton.addCentredArc(
-                                rect.getCentreX(), rect.getCentreY(), 
-                                size / 2 - 4, size / 2 - 4,
-                                0.0f, 
-                                angle, MathConstants<float>::twoPi - angle,
-                                true
-                            );
+        auto size   = jmin(bounds.getHeight(), bounds.getWidth()) - 4;
+        auto rect   = bounds.withSizeKeepingCentre(size, size).toFloat();
+        float angle = degreesToRadians(30.0f);
 
-    powerButton.startNewSubPath(rect.getCentreX(), rect.getY() + 2);
-    powerButton.lineTo(rect.getCentre());
+        powerButton.addCentredArc(
+                                    rect.getCentreX(), rect.getCentreY(), 
+                                    size / 2 - 4, size / 2 - 4,
+                                    0.0f, 
+                                    angle, MathConstants<float>::twoPi - angle,
+                                    true
+                                );
 
-    PathStrokeType pathStrokeType(2.0f, PathStrokeType::JointStyle::curved);
+        powerButton.startNewSubPath(rect.getCentreX(), rect.getY() + 2);
+        powerButton.lineTo(rect.getCentre());
 
-    button.getToggleState() ? g.setColour(Colours::steelblue) : g.setColour(Colours::grey);
+        PathStrokeType pathStrokeType(2.0f, PathStrokeType::JointStyle::curved);
 
-    g.strokePath(powerButton, pathStrokeType);
-    g.drawEllipse(rect, 2.0f);
+        button.getToggleState() ? g.setColour(Colours::steelblue) : g.setColour(Colours::grey);
+
+        g.strokePath(powerButton, pathStrokeType);
+        g.drawEllipse(rect, 2.0f);
+    }
+
+    else if (auto* abtn = dynamic_cast<AnalyzerButton*>(&button))  
+    {
+        button.getToggleState() ? g.setColour(Colours::steelblue) : g.setColour(Colours::grey);
+        g.drawRect(bounds, 2.0f);
+        bounds = bounds.reduced(4);
+        g.strokePath(abtn->getPath(), PathStrokeType(2.0f));
+    }
+
+    else
+        jassertfalse;
 }
 
 //==============================================================================
@@ -337,18 +353,21 @@ void ResponseCurveComponent::paint (Graphics& g)
         responseCurve.lineTo(frequencyResponseArea.getX() + x, mapMagnitudeToPixel(magnitudesDecibel[x]));
     }
 
+    if (showFFT)
+    {
 
-    auto leftFFTPath  = leftPath .getPath();
-    auto rightFFTPath = rightPath.getPath();
+        auto leftFFTPath  = leftPath .getPath();
+        auto rightFFTPath = rightPath.getPath();
 
-    g.setColour(Colours::cyan);
-    leftFFTPath.applyTransform(AffineTransform().translation(frequencyResponseArea.getX(), frequencyResponseArea.getY()));
-    g.strokePath(leftFFTPath, PathStrokeType(1.0f));
+        g.setColour(Colours::cyan);
+        leftFFTPath.applyTransform(AffineTransform().translation(frequencyResponseArea.getX(), frequencyResponseArea.getY()));
+        g.strokePath(leftFFTPath, PathStrokeType(1.0f));
 
 
-    g.setColour(Colours::greenyellow);
-    rightFFTPath.applyTransform(AffineTransform().translation(frequencyResponseArea.getX(), frequencyResponseArea.getY()));
-    g.strokePath(rightFFTPath, PathStrokeType(1.0f));
+        g.setColour(Colours::greenyellow);
+        rightFFTPath.applyTransform(AffineTransform().translation(frequencyResponseArea.getX(), frequencyResponseArea.getY()));
+        g.strokePath(rightFFTPath, PathStrokeType(1.0f));
+    }
 
     g.setColour(Colours::orange);
     g.drawRoundedRectangle(frequencyResponseArea.toFloat(), 4.0f, 3.0f);
@@ -459,11 +478,15 @@ void ResponseCurveComponent::parameterValueChanged(int parameterIndex, float new
 
 void ResponseCurveComponent::timerCallback()
 {
-    const auto  fftBounds   = getRenderArea().toFloat();
-    double      sampleRate  = processor.getSampleRate();
+    if (showFFT)
+    {
 
-    leftPath .process(fftBounds, sampleRate);
-    rightPath.process(fftBounds, sampleRate);
+        const auto  fftBounds   = getRenderArea().toFloat();
+        double      sampleRate  = processor.getSampleRate();
+
+        leftPath .process(fftBounds, sampleRate);
+        rightPath.process(fftBounds, sampleRate);
+    }
 
     if (paramsChanged.compareAndSetBool(false, true))
     {
@@ -522,7 +545,7 @@ VstpluginAudioProcessorEditor::VstpluginAudioProcessorEditor (VstpluginAudioProc
         lowCutBypassToggleAttachment    (processor.apvts, "LowCut Bypass",  lowCutBypassToggle),
         highCutBypassToggleAttachment   (processor.apvts, "HighCut Bypass", highCutBypassToggle),
         peakBypassToggleAttachment      (processor.apvts, "Peak Bypass",    peakBypassToggle),
-        analyzerToggleAttachment        (processor.apvts, "Analyzer Bypass",analyzerToggle)
+        analyzerToggleAttachment        (processor.apvts, "Analyzer Enable",analyzerToggle)
 {
     // Make sure that before the constructor has finished, you've set the
     // editor's size to whatever you need it to be.
@@ -549,6 +572,60 @@ VstpluginAudioProcessorEditor::VstpluginAudioProcessorEditor (VstpluginAudioProc
     lowCutBypassToggle  .setLookAndFeel(&lnf);
     highCutBypassToggle .setLookAndFeel(&lnf);
     peakBypassToggle    .setLookAndFeel(&lnf);    
+    analyzerToggle      .setLookAndFeel(&lnf);    
+
+    juce::Component::SafePointer<VstpluginAudioProcessorEditor> editorPtr (this);
+
+    lowCutBypassToggle.onClick = [editorPtr]()
+    {
+        // If the editor exisis [not deleted]
+        if (auto* component = editorPtr.getComponent())
+        {
+            auto isBypassed = component->lowCutBypassToggle.getToggleState();
+            component->lowCutSlopeSlider    .setEnabled(!isBypassed);
+            component->lowCutFrequencySlider.setEnabled(!isBypassed);
+        }
+    };
+
+    highCutBypassToggle.onClick = [editorPtr]()
+    {
+        // If the editor exisis [not deleted]
+        if (auto* component = editorPtr.getComponent())
+        {
+            auto isBypassed = component->highCutBypassToggle.getToggleState();
+            component->highCutSlopeSlider    .setEnabled(!isBypassed);
+            component->highCutFrequencySlider.setEnabled(!isBypassed);
+        }
+    };
+
+    peakBypassToggle.onClick = [editorPtr]()
+    {
+        // If the editor exisis [not deleted]
+        if (auto* component = editorPtr.getComponent())
+        {
+            auto isBypassed = component->peakBypassToggle.getToggleState();
+            component->peakQualitySlider.setEnabled(!isBypassed);
+            component->peakFrequencySlider.setEnabled(!isBypassed);
+            component->peakGainSlider   .setEnabled(!isBypassed);
+        }   
+    };
+
+    analyzerToggle.onClick = [editorPtr]()
+    {
+        // If the editor exisis [not deleted]
+        if (auto* component = editorPtr.getComponent())
+        {
+            auto isEnabled = component->analyzerToggle.getToggleState();
+            component->responseCurveComponent.showFFTAnalysis(isEnabled);
+        }
+    };
+
+    // Initialise enable states of all toggles
+    // If this is not done, sliders will not be disabled on plugin reload [if buttons bypassed]
+    lowCutBypassToggle.onClick();
+    highCutBypassToggle.onClick();
+    peakBypassToggle.onClick();
+    analyzerToggle.onClick();
 
     setSize (800, 600);
 }
@@ -558,7 +635,7 @@ VstpluginAudioProcessorEditor::~VstpluginAudioProcessorEditor()
     lowCutBypassToggle  .setLookAndFeel(nullptr);
     highCutBypassToggle .setLookAndFeel(nullptr);
     peakBypassToggle    .setLookAndFeel(nullptr); 
-
+    analyzerToggle      .setLookAndFeel(nullptr);
 }
 
 //==============================================================================
@@ -599,6 +676,9 @@ void VstpluginAudioProcessorEditor::resized()
     auto peakGainSliderArea     = bounds.removeFromTop(bounds.getHeight() * 0.50);
     // Low 33% of the middle 33% block
     auto peakQualitySliderArea  = bounds;
+
+    Rectangle<int> analyzerToggleArea (frequencyResponseArea.getRight() - 60, frequencyResponseArea.getY() + 24, 48, 27);
+    analyzerToggle        .setBounds(analyzerToggleArea);
 
     lowCutBypassToggle    .setBounds(lowCutToggleArea);
     lowCutFrequencySlider .setBounds(lowCutFreqSliderArea);
