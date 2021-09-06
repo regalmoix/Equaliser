@@ -37,14 +37,14 @@ Type mapFromLog (Type base, Type valueInLogRange, Type logRangeMin, Type logRang
 
 //==============================================================================
 
-void LookNFeel::drawRotarySlider(   
+void LookNFeel::drawRotarySlider (   
                                 juce::Graphics& g,
                                 int x, int y, int width, int height,
                                 float sliderPosProportional,
                                 float rotaryStartAngle,
                                 float rotaryEndAngle,
                                 juce::Slider& slider
-                                )
+                            )
 {
     using namespace juce;
 
@@ -89,6 +89,43 @@ void LookNFeel::drawRotarySlider(
         g.drawFittedText(rswl->getDisplayString(), rect.toNearestInt(), juce::Justification::centred, 1);
     }     
 }
+
+void LookNFeel::drawToggleButton (   
+                                juce::Graphics& g,
+                                juce::ToggleButton& button,
+                                bool shouldDrawButtonAsHighlighted,
+                                bool shoulDrawButtonAsDown
+                            )
+{
+    using namespace juce;
+
+    auto bounds = button.getLocalBounds();
+    Path powerButton;
+
+    auto size   = jmin(bounds.getHeight(), bounds.getWidth()) - 4;
+    auto rect   = bounds.withSizeKeepingCentre(size, size).toFloat();
+    float angle = degreesToRadians(30.0f);
+
+    powerButton.addCentredArc(
+                                rect.getCentreX(), rect.getCentreY(), 
+                                size / 2 - 4, size / 2 - 4,
+                                0.0f, 
+                                angle, MathConstants<float>::twoPi - angle,
+                                true
+                            );
+
+    powerButton.startNewSubPath(rect.getCentreX(), rect.getY() + 2);
+    powerButton.lineTo(rect.getCentre());
+
+    PathStrokeType pathStrokeType(2.0f, PathStrokeType::JointStyle::curved);
+
+    button.getToggleState() ? g.setColour(Colours::steelblue) : g.setColour(Colours::grey);
+
+    g.strokePath(powerButton, pathStrokeType);
+    g.drawEllipse(rect, 2.0f);
+}
+
+//==============================================================================
 
 juce::String RotarySliderWithLabels::getDisplayString() const
 {
@@ -509,11 +546,18 @@ VstpluginAudioProcessorEditor::VstpluginAudioProcessorEditor (VstpluginAudioProc
         addAndMakeVisible(component);
     }
 
+    lowCutBypassToggle  .setLookAndFeel(&lnf);
+    highCutBypassToggle .setLookAndFeel(&lnf);
+    peakBypassToggle    .setLookAndFeel(&lnf);    
+
     setSize (800, 600);
 }
 
 VstpluginAudioProcessorEditor::~VstpluginAudioProcessorEditor()
 {
+    lowCutBypassToggle  .setLookAndFeel(nullptr);
+    highCutBypassToggle .setLookAndFeel(nullptr);
+    peakBypassToggle    .setLookAndFeel(nullptr); 
 
 }
 

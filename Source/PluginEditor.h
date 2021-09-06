@@ -256,6 +256,12 @@ public:
                             float rotaryEndAngle,
                             juce::Slider&
                         ) override;
+
+    void drawToggleButton(  juce::Graphics&,
+                            juce::ToggleButton& button,
+                            bool shouldDrawButtonAsHighlighted,
+                            bool shoulDrawButtonAsDown
+                        ) override; 
 };
 
 class RotarySliderWithLabels : public juce::Slider
@@ -383,6 +389,7 @@ private:
     APVTS::ButtonAttachment peakBypassToggleAttachment;
     APVTS::ButtonAttachment analyzerToggleAttachment;
 
+    LookNFeel               lnf;
 
     std::vector<juce::Component*> getComponents();
 
