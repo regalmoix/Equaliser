@@ -292,6 +292,38 @@ juce::AudioProcessorValueTreeState::ParameterLayout VstpluginAudioProcessor::cre
         )
     );
 
+    layout.add(std::make_unique<AudioParameterBool>
+        (
+            "LowCut Bypass",
+            "LowCut Bypass",
+            false
+        )
+    );
+
+    layout.add(std::make_unique<AudioParameterBool>
+        (
+            "HighCut Bypass",
+            "HighCut Bypass",
+            false
+        )
+    );
+
+    layout.add(std::make_unique<AudioParameterBool>
+        (
+            "Peak Bypass",
+            "Peak Bypass",
+            false
+        )
+    );
+
+    layout.add(std::make_unique<AudioParameterBool>
+        (
+            "Analyzer Bypass",
+            "Analyzer Bypass",
+            false
+        )
+    );
+
     return layout;
 }
 
@@ -302,10 +334,16 @@ ChainSettings getChainSettings (const juce::AudioProcessorValueTreeState& apvts)
     settings.peakQ          = apvts.getRawParameterValue("Peak Q")->load();
     settings.peakGain       = apvts.getRawParameterValue("Peak Gain")->load();
     settings.peakFreq       = apvts.getRawParameterValue("Peak Freq")->load();
+
     settings.lowCutFreq     = apvts.getRawParameterValue("LowCut Freq")->load();
     settings.highCutFreq    = apvts.getRawParameterValue("HighCut Freq")->load();
+    
     settings.lowCutSlope    = static_cast<Slope>(apvts.getRawParameterValue("LowCut Slope")->load());
     settings.highCutSlope   = static_cast<Slope>(apvts.getRawParameterValue("HighCut Slope")->load());
+
+    settings.lowCutBypass   = apvts.getRawParameterValue("LowCut Bypass")->load() > 0.5f;
+    settings.highCutBypass  = apvts.getRawParameterValue("HighCut Bypass")->load() > 0.5f;
+    settings.peakBypass     = apvts.getRawParameterValue("Peak Bypass")->load() > 0.5f;
 
     return settings;
 }
@@ -395,6 +433,9 @@ void updateCutFilter(FilterChainType& lowCut, const CoefficientType& cutCoeffici
 void VstpluginAudioProcessor::updatePeakFilter (const ChainSettings& settings)
 {
     CoefficientPtr peakCoeff = makePeakFilter(settings, getSampleRate());
+
+    leftChain .setBypassed<ChainPostitions::Peak>(settings.peakBypass);
+    rightChain.setBypassed<ChainPostitions::Peak>(settings.peakBypass);
     // Get the reference to the processing peak filter of Left chain
     // TODO: Possible to do different processing for both channels 
     updateCoefficients(leftChain .get<ChainPostitions::Peak>().coefficients, peakCoeff);
@@ -409,6 +450,9 @@ void VstpluginAudioProcessor::updateLowCutFilter(const ChainSettings& settings)
     auto& rightLowCut           = rightChain.get<ChainPostitions::LowCut> ();
     auto& leftLowCut            = leftChain .get<ChainPostitions::LowCut> ();
 
+    leftChain .setBypassed<ChainPostitions::LowCut>(settings.lowCutBypass);
+    rightChain.setBypassed<ChainPostitions::LowCut>(settings.lowCutBypass);
+
     updateCutFilter (rightLowCut, lowCutCoefficients, settings.lowCutSlope);
     updateCutFilter (leftLowCut , lowCutCoefficients, settings.lowCutSlope);
 }
@@ -419,6 +463,9 @@ void VstpluginAudioProcessor::updateHighCutFilter(const ChainSettings& settings)
 
     auto& rightHighCut          = rightChain.get<ChainPostitions::HighCut>();
     auto& leftHighCut           = leftChain .get<ChainPostitions::HighCut>();
+
+    leftChain .setBypassed<ChainPostitions::HighCut>(settings.highCutBypass);
+    rightChain.setBypassed<ChainPostitions::HighCut>(settings.highCutBypass);
 
     updateCutFilter (rightHighCut, highCutCoefficients, settings.highCutSlope);
     updateCutFilter (leftHighCut , highCutCoefficients, settings.highCutSlope);
