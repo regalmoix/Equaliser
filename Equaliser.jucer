@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<JUCERPROJECT id="XOt1Kx" name="VSTPlugin" projectType="audioplug" projectLineFeed="&#10;"
+<JUCERPROJECT id="XOt1Kx" name="Equaliser" projectType="audioplug" projectLineFeed="&#10;"
               cppLanguageStandard="17" pluginVSTCategory="kPlugCategEffect"
               pluginVST3Category="Fx" pluginFormats="buildStandalone,buildVST3"
               jucerFormatVersion="1" pluginManufacturer="nacagraw" pluginAUMainType="'aufx'"
-              pluginAAXCategory="0,8192" pluginRTASCategory="0,8192">
-  <MAINGROUP id="WkGktK" name="VSTPlugin">
+              pluginAAXCategory="0,8192" pluginRTASCategory="0,8192" companyName="nacagraw">
+  <MAINGROUP id="WkGktK" name="Equaliser">
     <GROUP id="{25CF386D-AAFC-35F0-3998-944B46943C07}" name="Source">
       <FILE id="eg19HC" name="PluginProcessor.cpp" compile="1" resource="0"
             file="Source/PluginProcessor.cpp"/>
@@ -20,10 +20,10 @@
     <LINUX_MAKE targetFolder="Builds/LinuxMakefile">
       <CONFIGURATIONS>
         <CONFIGURATION isDebug="1" name="Debug" recommendedWarnings="GCC" linuxArchitecture="-march=native"
-                       binaryPath="$(HOME)/VSTPlugin/Builds/Plugin/" enablePluginBinaryCopyStep="1"/>
+                       binaryPath="Builds/Plugin/" enablePluginBinaryCopyStep="1"/>
         <CONFIGURATION isDebug="0" name="Release" linuxArchitecture="-march=native"
                        recommendedWarnings="GCC" linkTimeOptimisation="1" enablePluginBinaryCopyStep="1"
-                       vstBinaryLocation="$(HOME)/VSTPlugin/Builds/VST2" binaryPath="$(HOME)/VSTPlugin/Builds/Plugin/"/>
+                       vstBinaryLocation="$(HOME)/VSTPlugin/Builds/VST2" binaryPath="Builds/Plugin/"/>
       </CONFIGURATIONS>
       <MODULEPATHS>
         <MODULEPATH id="juce_audio_basics" path="../../../usr/share/juce/modules"/>
@@ -65,5 +65,6 @@
   <LIVE_SETTINGS>
     <LINUX/>
   </LIVE_SETTINGS>
-  <JUCEOPTIONS JUCE_VST3_CAN_REPLACE_VST2="0" JUCE_STRICT_REFCOUNTEDPOINTER="1"/>
+  <JUCEOPTIONS JUCE_VST3_CAN_REPLACE_VST2="0" JUCE_STRICT_REFCOUNTEDPOINTER="1"
+               JUCE_WEB_BROWSER="0"/>
 </JUCERPROJECT>
